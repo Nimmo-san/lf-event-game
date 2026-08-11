@@ -675,7 +675,7 @@ function handleTouchStart(
     // Prevents this from also firing a synthetic mouse/click
     // event afterward, and blocks any default gesture the
     // browser might otherwise try (double-tap zoom, etc.) —
-    // 'touch-action: none" on the canvas handles most of this.
+    // "touch-action: none" on the canvas handles most of this.
     event.preventDefault()
 
     const rect =
@@ -814,7 +814,7 @@ function restart() {
 
                 <span v-if="comboMultiplier > 1" class="hud-readout-item hud-readout-item--cyan">
                     COMBO
-                    <strong>x{{ comboMultiplier.toFixed(2) }}</strong>
+                    <strong>×{{ comboMultiplier.toFixed(2) }}</strong>
                 </span>
 
                 <span class="hud-readout-item hud-readout-item--volt">
@@ -926,7 +926,7 @@ function restart() {
 
     inset: 0;
 
-    z-index: 20;
+    z-index: 2;
 
     pointer-events: none;
 
@@ -1008,7 +1008,7 @@ function restart() {
 .hud-readout {
     position: absolute;
 
-    top: 14px;
+    top: calc(14px + env(safe-area-inset-top));
     left: 14px;
     right: 14px;
 
@@ -1401,7 +1401,7 @@ function restart() {
     }
 
     .hud-readout {
-        top: 10px;
+        top: calc(10px + env(safe-area-inset-top));
         left: 10px;
         right: 10px;
     }
