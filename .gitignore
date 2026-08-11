@@ -2,6 +2,13 @@
 .env
 **/__pycache__
 
+# Local SQLite database (dev only — production reads/writes
+# a different path on Render's persistent disk, not this file)
+backend/data/*.db
+backend/data/*.db-journal
+backend/data/*.db-wal
+backend/data/*.db-shm
+
 # Logs
 logs
 *.log
