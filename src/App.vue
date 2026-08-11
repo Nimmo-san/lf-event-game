@@ -1,6 +1,8 @@
+<script setup lang="ts">
+</script>
 
 <template>
-  <RouterView/>
+  <RouterView />
 </template>
 
 <style>
@@ -11,8 +13,10 @@
 
 :root {
   color-scheme: dark;
-
-  /* TODO: ADD brand colours  */
+  
+  /*
+   * LF brand colors
+   */
   --lf-green: #92c13b;
   --lf-green-rgb: 146, 193, 59;
   --lf-green-light: #b1d670;
@@ -69,9 +73,12 @@ body {
 }
 
 #app {
-  position: fixed;
-  inset: 0;
+  width: 100%;
+  height: 100dvh;
 
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  -webkit-overflow-scrolling: touch;
 }
 </style>
