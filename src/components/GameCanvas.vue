@@ -74,6 +74,15 @@ const shakeX =
 const shakeY =
     ref(0)
 
+// Reflects the device's primary input mechanism, not just
+// raw touch hardware — a laptop with a touchscreen still
+// reports false here, which is the right call for a "which
+// controls apply" decision, not just "is touch possible".
+const isTouchDevice =
+    window.matchMedia(
+        "(pointer: coarse)",
+    ).matches
+
 function resizeCanvas() {
     const element =
         canvas.value
@@ -646,6 +655,46 @@ function handleKeyDown(
     }
 }
 
+function handleTouchStart(
+    event: TouchEvent,
+) {
+    const element =
+        canvas.value
+
+    if (!element) {
+        return
+    }
+
+    const touch =
+        event.touches[0]
+
+    if (!touch) {
+        return
+    }
+
+    // Prevents this from also firing a synthetic mouse/click
+    // event afterward, and blocks any default gesture the
+    // browser might otherwise try (double-tap zoom, etc.) —
+    // 'touch-action: none" on the canvas handles most of this.
+    event.preventDefault()
+
+    const rect =
+        element.getBoundingClientRect()
+
+    const tapX =
+        touch.clientX -
+        rect.left
+
+    if (
+        tapX <
+        rect.width / 2
+    ) {
+        moveLeft()
+    } else {
+        moveRight()
+    }
+}
+
 onMounted(async () => {
     await spriteRenderer.preload()
 
@@ -674,6 +723,17 @@ onMounted(async () => {
         handleKeyDown,
     )
 
+    if (element && isTouchDevice) {
+        // passive: false is required — the handler calls
+        // preventDefault(), which browsers ignore on passive
+        // listeners (the default for touchstart).
+        element.addEventListener(
+            "touchstart",
+            handleTouchStart,
+            { passive: false },
+        )
+    }
+
     running = true
 
     lastTime =
@@ -697,6 +757,11 @@ onBeforeUnmount(() => {
     window.removeEventListener(
         "keydown",
         handleKeyDown,
+    )
+
+    canvas.value?.removeEventListener(
+        "touchstart",
+        handleTouchStart,
     )
 })
 
@@ -738,10 +803,7 @@ function restart() {
                     <strong>{{ score }}</strong>
                 </span>
 
-                <span
-                    class="hud-readout-item"
-                    :class="{ 'hud-readout-item--urgent': timeRemaining <= 10 }"
-                >
+                <span class="hud-readout-item" :class="{ 'hud-readout-item--urgent': timeRemaining <= 10 }">
                     ⏱
                     <strong>{{ timeRemaining }}s</strong>
                 </span>
@@ -1025,8 +1087,15 @@ function restart() {
 }
 
 @keyframes urgent-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.55; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.55;
+    }
 }
 
 .hud-dot {
