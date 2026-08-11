@@ -1,0 +1,56 @@
+import { createRouter, createWebHistory } from "vue-router";
+
+import StartScreen from "../components/StartScreen.vue";
+import GameView from "../views/GameView.vue";
+import LeaderboardView from "../views/LeaderboardView.vue";
+
+import { getPlayerSession } from "../services/playerSession";
+
+const router = createRouter({
+  history: createWebHistory(),
+
+  routes: [
+    {
+      path: "/",
+      name: "start",
+      component: StartScreen,
+    },
+
+    {
+      path: "/game",
+      name: "game",
+      component: GameView,
+
+      meta: {
+        requiresPlayer: true,
+      },
+    },
+
+    {
+      path: "/leaderboard",
+      name: "leaderboard",
+      component: LeaderboardView,
+      // meta: {
+      //   requiresPlayer: true,
+      // },
+    },
+  ],
+});
+
+router.beforeEach((to) => {
+  const playerSession = getPlayerSession();
+
+  if (to.meta.requiresPlayer && !playerSession) {
+    return {
+      name: "start",
+    };
+  }
+
+  if (to.name === "start" && playerSession) {
+    return {
+      name: "game",
+    };
+  }
+});
+
+export default router;
