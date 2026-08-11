@@ -1,5 +1,14 @@
 <script setup lang="ts">
 import GameCanvas from "../components/GameCanvas.vue"
+
+// Same check as GameCanvas.vue — reflects the device's
+// primary input mechanism, used here to decide which
+// control hint to show in the footer.
+const isTouchDevice =
+    window.matchMedia(
+        "(pointer: coarse)",
+    ).matches
+
 </script>
 
 <template>
@@ -14,23 +23,27 @@ import GameCanvas from "../components/GameCanvas.vue"
 
         </header>
 
+
         <section class="game-container">
             <GameCanvas />
         </section>
 
+
         <footer class="controls-hint">
 
-            <kbd>←</kbd>
+            <template v-if="isTouchDevice">
+                <span class="hint-text">
+                    Tap left or right to steer
+                </span>
+            </template>
 
-            <span class="hint-text">
-                and
-            </span>
-
-            <kbd>→</kbd>
-
-            <span class="hint-text">
-                to steer
-            </span>
+            <template v-else>
+                <kbd>←</kbd>
+                <kbd>→</kbd>
+                <span class="hint-text">
+                    to steer
+                </span>
+            </template>
 
         </footer>
 
