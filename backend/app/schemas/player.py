@@ -1,8 +1,20 @@
 from datetime import datetime
 
-from pydantic import BaseModel
-from pydantic import EmailStr
-from pydantic import Field
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+    field_validator,
+)
+
+import re
+
+EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+DOMAIN_PATTERN = re.compile(
+    r"^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:/.*)?$",
+    re.IGNORECASE,
+)
 
 
 class GameResultCreate(BaseModel):
