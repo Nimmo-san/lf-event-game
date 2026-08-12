@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { queueLeaderboardSubmission } from "../storage/leaderboardDatabase";
 import { syncLeaderboardSubmissions } from "../services/leaderboardSync";
+import { getPlayerRank } from "../services/leaderboardApi";
 
 const props = defineProps<{
     gameId: string;
@@ -64,11 +65,21 @@ async function submitEntry() {
         submitted.value = true;
 
         if (syncResult.synced > 0) {
+            const currentRank =
+                await getPlayerRank(
+                    props.playerId,
+                );
+
+            rank.value =
+                currentRank.rank;
+
+            // submitted.value = true;
+
             syncStatus.value =
                 "Your entry has been submitted.";
         } else {
             syncStatus.value =
-                "Your entry has been saved and will be submitted when you're back online.";
+                "Your entry is saved. Your position will be available once you're back online.";
         }
     } catch (err) {
         console.error(
@@ -185,13 +196,16 @@ function playAgain() {
             Your score has been added to the
             Lightning Flight leaderboard.
         </p>
-        
+
         <!-- TODO: rank cant be known offline, maybe add current rank on last update -->
         <div class="leaderboard-rank">
             <span>Your position</span>
 
-            <strong>
+            <strong v-if="rank !== null">
                 #{{ rank }}
+            </strong>
+            <strong v-else>
+                Pending
             </strong>
         </div>
 
