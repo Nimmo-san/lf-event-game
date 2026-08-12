@@ -14,7 +14,7 @@ export default defineConfig({
       includeAssets: [
         "sprites/plane.png",
         "sprites/glowbolt.svg",
-        "sprites/obstacle.png"
+        "sprites/obstacle.png",
       ],
 
       manifest: {
@@ -44,6 +44,7 @@ export default defineConfig({
 
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,webp,jpg,jpeg,woff,woff2}"],
+        cleanupOutdatedCaches: true,
       },
     }),
   ],
