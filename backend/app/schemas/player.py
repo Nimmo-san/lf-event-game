@@ -44,6 +44,24 @@ class GameResultCreate(BaseModel):
         gt=0,
     )
 
+    @field_validator(
+        "company_name",
+    )
+    @classmethod
+    def validate_company_name(
+        cls,
+        value: str,
+    ) -> str:
+        company = value.strip()
+
+        if EMAIL_PATTERN.match(company):
+            raise ValueError("Company name cannot be an email address.")
+
+        if DOMAIN_PATTERN.match(company):
+            raise ValueError("Company name cannot be a website.")
+
+        return company
+
 
 class GameResultResponse(BaseModel):
     game_id: str
