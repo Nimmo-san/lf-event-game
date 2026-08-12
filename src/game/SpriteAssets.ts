@@ -20,6 +20,8 @@ export function loadSprite(name: SpriteName): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
 
+    image.crossOrigin = "anonymous";
+
     image.onload = () => {
       cache.set(name, image);
 
