@@ -81,7 +81,6 @@ def submit_leaderboard_entry(
     rank = calculate_player_rank(
         db,
         game.player_id,
-        game.score,
     )
 
     return {
@@ -193,26 +192,37 @@ def get_player_rank(
 def calculate_player_rank(
     db: Session,
     player_id: str,
-    score: int,
-) -> int:
-
-    better_scores = (
-        db.query(
-            GameResult.player_id,
-            func.max(GameResult.score).label("best_score"),
-        )
-        .join(
-            LeaderboardEntry,
-            LeaderboardEntry.player_id == GameResult.player_id,
-        )
-        .group_by(
-            GameResult.player_id,
-        )
-        .having(func.max(GameResult.score) > score)
-        .count()
+    ) -> int:
+    ranked_games = build_best_submitted_games_query(
+        db,
     )
 
-    return better_scores + 1
+    players = (
+        db.query(
+            ranked_games.c.player_id,
+        )
+        .filter(
+            ranked_games.c.player_game_rank == 1,
+        )
+        .order_by(
+            ranked_games.c.score.desc(),
+            ranked_games.c.created_at.asc(),
+            ranked_games.c.player_name.asc(),
+        )
+        .all()
+    )
+
+    for rank, player in enumerate(
+        players,
+        start=1,
+    ):
+        if player.player_id == player_id:
+            return rank
+
+    raise HTTPException(
+        status_code=404,
+        detail="Player rank not found.",
+    )
 
 
 def build_best_submitted_games_query(
