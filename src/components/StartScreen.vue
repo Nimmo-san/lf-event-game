@@ -185,7 +185,7 @@ function startGame() {
                         Company
                     </label>
 
-                    <input id="company-name" v-model="companyName" type="text" autocomplete="organization"
+                    <input id="company-name" v-model="companyName" type="text" autocomplete="organization" minlength="2"
                         maxlength="150" placeholder="e.g. Lightning Fibre" />
 
                 </div>
