@@ -20,6 +20,25 @@ export function loadSprite(name: SpriteName): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
 
+    // the bane of my existence, fixed the Vary issue
+    // in cors mismatch.
+    /* Did this first
+     * Workbox installation ->
+     * fetches images ->
+     * cached using request headers A ->
+     * Vary: Accept
+    */
+
+    // then tried to retrieve with diff header
+    /*
+      <img> non-CORS request ->
+      request headers B ->
+      cached response says Vary: Accept ->
+      cache doesn't consider it a valid match ->
+      Workbox tries network ->
+      you're offline ->
+      FAILED
+    */
     image.crossOrigin = "anonymous";
 
     image.onload = () => {
