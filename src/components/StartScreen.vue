@@ -23,6 +23,11 @@ const companyName =
 const error =
     ref("")
 
+const EMAIL_REGEX =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const URL_REGEX =
+    /^(https?:\/\/|www\.)/i;
 
 function startGame() {
     error.value = ""
@@ -34,11 +39,13 @@ function startGame() {
         return
     }
 
-    if (!companyName.value.trim()) {
-        error.value =
-            "Enter your company."
+    const companyError = validateCompanyName(companyName.value)
 
-        return
+    if (companyError) {
+        error.value =
+            companyError;
+
+        return;
     }
 
     createPlayerSession(
@@ -49,6 +56,27 @@ function startGame() {
     router.push({
         name: "game",
     })
+}
+
+function validateCompanyName(
+    value: string,
+): string | null {
+    const company =
+        value.trim();
+
+    if (!company) {
+        return "Enter your company name.";
+    }
+
+    if (EMAIL_REGEX.test(company)) {
+        return "Enter your company name, not your email address.";
+    }
+
+    if (URL_REGEX.test(company)) {
+        return "Enter your company name, not a website.";
+    }
+
+    return null;
 }
 </script>
 
