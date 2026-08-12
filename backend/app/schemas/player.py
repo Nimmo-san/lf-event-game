@@ -62,7 +62,6 @@ class GameResultCreate(BaseModel):
 
         return company
 
-
     @field_validator("player_name")
     @classmethod
     def validate_player_name(
@@ -138,3 +137,9 @@ class LeaderboardEntryResponse(BaseModel):
     score: int
 
     rank: int
+
+
+class PlayerRankResponse(BaseModel):
+    player_id: str
+    rank: int
+    score: int
