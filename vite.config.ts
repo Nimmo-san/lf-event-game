@@ -9,6 +9,14 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
 
+      // explicitly listing the sprites via includeAssets
+      // due to sprites/obstacle.png not loading properly once offline
+      includeAssets: [
+        "sprites/plane.png",
+        "sprites/glowbolt.svg",
+        "sprites/obstacle.png"
+      ],
+
       manifest: {
         name: "Lightning Flight",
         short_name: "Lightning Flight",
