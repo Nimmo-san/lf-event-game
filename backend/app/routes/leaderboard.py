@@ -12,9 +12,12 @@ from app.rate_limit import limiter
 from app.database import get_db
 from app.models.game import GameResult
 from app.models.leaderboard import LeaderboardEntry
-from app.schemas.player import LeaderboardRow
-from app.schemas.player import LeaderboardEntryCreate
-from app.schemas.player import LeaderboardEntryResponse
+from app.schemas.player import (
+    LeaderboardRow,
+    LeaderboardEntryCreate,
+    LeaderboardEntryResponse,
+    PlayerRankResponse,
+)
 
 
 router = APIRouter(
@@ -136,6 +139,55 @@ def get_leaderboard(
             start=1,
         )
     ]
+
+
+@router.get(
+    "/leaderboard/rank/{player_id}",
+    response_model=PlayerRankResponse,
+)
+@limiter.limit("60/minute")
+def get_player_rank(
+    request: Request,
+    player_id: str,
+    db: Session = Depends(get_db),
+):
+    ranked_games = build_best_submitted_games_query(
+        db,
+    )
+
+    best_players = (
+        db.query(
+            ranked_games.c.player_id,
+            ranked_games.c.score,
+            ranked_games.c.created_at,
+            ranked_games.c.player_name,
+        )
+        .filter(
+            ranked_games.c.player_game_rank == 1,
+        )
+        .order_by(
+            ranked_games.c.score.desc(),
+            ranked_games.c.created_at.asc(),
+            ranked_games.c.player_name.asc(),
+        )
+        .all()
+    )
+
+    for rank, player in enumerate(
+        best_players,
+        start=1,
+    ):
+        if player.player_id == player_id:
+            return {
+                "player_id": player.player_id,
+                "rank": rank,
+                "score": player.score,
+            }
+
+    raise HTTPException(
+        status_code=404,
+        detail="Player is not on the leaderboard.",
+    )
 
 
 def calculate_player_rank(
