@@ -202,7 +202,7 @@ function validateCompanyName(
                         Your name
                     </label>
 
-                    <input id="player-name" v-model="playerName" type="text" autocomplete="name" maxlength="100"
+                    <input id="player-name" v-model="playerName" type="text" autocomplete="name" minlength="2" maxlength="100"
                         placeholder="e.g. Emma Pearce" />
 
                 </div>
