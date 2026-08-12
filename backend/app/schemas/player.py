@@ -63,6 +63,31 @@ class GameResultCreate(BaseModel):
         return company
 
 
+    @field_validator("player_name")
+    @classmethod
+    def validate_player_name(
+        cls,
+        value: str,
+    ) -> str:
+        name = value.strip()
+
+        if EMAIL_PATTERN.fullmatch(name):
+            raise ValueError("Player name cannot be an email address.")
+
+        if DOMAIN_PATTERN.fullmatch(name):
+            raise ValueError("Player name cannot be a website.")
+
+        # Must contain at least one letter
+        if not any(char.isalpha() for char in name):
+            raise ValueError("Enter a valid player name.")
+
+        # Only allow letters and normal name punctuation
+        if not all(char.isalpha() or char in " '-'." for char in name):
+            raise ValueError("Enter a valid player name.")
+
+        return name
+
+
 class GameResultResponse(BaseModel):
     game_id: str
 
