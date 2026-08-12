@@ -99,29 +99,8 @@ def get_leaderboard(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    ranked_games = (
-        db.query(
-            LeaderboardEntry.player_id,
-            GameResult.id.label("game_id"),
-            GameResult.player_name,
-            GameResult.company_name,
-            GameResult.score,
-            GameResult.lightning_collected,
-            func.row_number()
-            .over(
-                partition_by=LeaderboardEntry.player_id,
-                order_by=(
-                    GameResult.score.desc(),
-                    GameResult.created_at.asc(),
-                ),
-            )
-            .label("player_game_rank"),
-        )
-        .join(
-            GameResult,
-            GameResult.id == LeaderboardEntry.game_id,
-        )
-        .subquery()
+    ranked_games = build_best_submitted_games_query(
+        db,
     )
 
     top_players = (
@@ -137,6 +116,7 @@ def get_leaderboard(
         )
         .order_by(
             ranked_games.c.score.desc(),
+            ranked_games.c.created_at.asc(),
             ranked_games.c.player_name.asc(),
         )
         .limit(10)
@@ -181,3 +161,35 @@ def calculate_player_rank(
     )
 
     return better_scores + 1
+
+
+def build_best_submitted_games_query(
+    db: Session,
+):
+    ranked_games = (
+        db.query(
+            LeaderboardEntry.player_id,
+            GameResult.id.label("game_id"),
+            GameResult.player_name,
+            GameResult.company_name,
+            GameResult.score,
+            GameResult.lightning_collected,
+            GameResult.created_at,
+            func.row_number()
+            .over(
+                partition_by=LeaderboardEntry.player_id,
+                order_by=(
+                    GameResult.score.desc(),
+                    GameResult.created_at.asc(),
+                ),
+            )
+            .label("player_game_rank"),
+        )
+        .join(
+            GameResult,
+            GameResult.id == LeaderboardEntry.game_id,
+        )
+        .subquery()
+    )
+
+    return ranked_games
