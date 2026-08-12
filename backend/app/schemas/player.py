@@ -12,7 +12,7 @@ import re
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 DOMAIN_PATTERN = re.compile(
-    r"^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:/.*)?$",
+    r"^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:.*)?$",
     re.IGNORECASE,
 )
 
