@@ -27,7 +27,7 @@ const EMAIL_REGEX =
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const DOMAIN_REGEX =
-  /^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/.*)?$/i;
+    /^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/.*)?$/i;
 
 function startGame() {
     error.value = ""
@@ -202,8 +202,8 @@ function validateCompanyName(
                         Your name
                     </label>
 
-                    <input id="player-name" v-model="playerName" type="text" autocomplete="name" minlength="2" maxlength="100"
-                        placeholder="e.g. Emma Pearce" />
+                    <input id="player-name" v-model="playerName" type="text" autocomplete="name" minlength="2"
+                        maxlength="100" placeholder="e.g. Emma Pearce" />
 
                 </div>
 
@@ -384,9 +384,16 @@ function validateCompanyName(
     position: relative;
     z-index: 1;
 
+    /*
+     * Fluid vertical rhythm — every gap/margin below is a
+     * multiple of this, so the whole card compresses
+     * together as viewport height shrinks.
+     */
+    --vspace: clamp(4px, 1.6vh, 12px);
+
     width: min(100%, 460px);
 
-    padding: 30px 26px 24px;
+    padding: calc(var(--vspace) * 2.5) 26px calc(var(--vspace) * 2);
 
     border: 1px solid var(--line);
 
@@ -411,9 +418,9 @@ function validateCompanyName(
     justify-content: space-between;
     gap: 10px;
 
-    margin-bottom: 22px;
+    margin-bottom: calc(var(--vspace) * 2.5);
 
-    padding-bottom: 14px;
+    padding-bottom: calc(var(--vspace) * 1.5);
 
     border-bottom: 1px solid var(--line);
 }
@@ -496,7 +503,7 @@ function validateCompanyName(
     color: var(--text);
 
     font-family: var(--font-display);
-    font-size: clamp(2.5rem, 10vw, 3.4rem);
+    font-size: clamp(2.2rem, min(10vw, 9vh), 3.4rem);
     font-weight: 700;
     line-height: 0.94;
     letter-spacing: -0.02em;
@@ -528,7 +535,7 @@ function validateCompanyName(
 
 
 .hero-tagline {
-    margin: 14px 0 6px;
+    margin: calc(var(--vspace) * 1.5) 0 calc(var(--vspace) * 0.75);
 
     color: var(--volt);
 
@@ -555,7 +562,7 @@ function validateCompanyName(
 ========================= */
 
 .bolt-divider {
-    margin: 22px 0;
+    margin: calc(var(--vspace) * 2.5) 0;
 }
 
 
@@ -624,7 +631,7 @@ function validateCompanyName(
 
     grid-template-columns: repeat(4, 1fr);
 
-    margin-bottom: 24px;
+    margin-bottom: calc(var(--vspace) * 2.5);
 
     border: 1px solid var(--line);
     border-radius: 12px;
@@ -638,7 +645,7 @@ function validateCompanyName(
     justify-items: center;
     gap: 5px;
 
-    padding: 11px 4px;
+    padding: calc(var(--vspace) * 1.3) 4px;
 
     text-align: center;
 }
@@ -657,6 +664,7 @@ function validateCompanyName(
     font-weight: 700;
 }
 
+
 .hud-item strong.hud-icon {
     display: flex;
     align-items: center;
@@ -672,6 +680,7 @@ function validateCompanyName(
 
     filter: drop-shadow(0 0 4px var(--volt-dim));
 }
+
 
 .hud-item span {
     color: var(--text-faint);
@@ -690,7 +699,7 @@ function validateCompanyName(
 
 .start-form {
     display: grid;
-    gap: 16px;
+    gap: calc(var(--vspace) * 1.8);
 }
 
 
@@ -872,7 +881,7 @@ function validateCompanyName(
 .start-footer {
     display: flex;
 
-    margin-top: 20px;
+    margin-top: calc(var(--vspace) * 2.2);
 
     align-items: center;
     justify-content: center;
@@ -938,7 +947,8 @@ function validateCompanyName(
         width: 100%;
         margin: 0 auto;
 
-        padding: 22px 18px 19px;
+        padding-left: 18px;
+        padding-right: 18px;
 
         border-radius: 16px;
     }
@@ -954,13 +964,9 @@ function validateCompanyName(
     }
 
 
-    .hud-strip {
-        margin-bottom: 20px;
-    }
-
-
     .hud-item {
-        padding: 9px 2px;
+        padding-left: 2px;
+        padding-right: 2px;
     }
 
 
@@ -993,32 +999,6 @@ function validateCompanyName(
         padding-bottom: 14px;
 
         overflow-y: auto;
-    }
-
-
-    .start-card {
-        padding: 20px 24px 17px;
-    }
-
-
-    .brand-strip {
-        margin-bottom: 16px;
-        padding-bottom: 10px;
-    }
-
-
-    .hero-title {
-        font-size: 2.4rem;
-    }
-
-
-    .bolt-divider {
-        margin: 16px 0;
-    }
-
-
-    .hud-strip {
-        margin-bottom: 18px;
     }
 }
 
