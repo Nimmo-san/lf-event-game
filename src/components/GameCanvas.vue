@@ -1323,7 +1323,7 @@ function restart() {
     border: 0;
     border-radius: 10px;
 
-    color: var(--text-faint);
+    color: var(--text-dim);
     background: transparent;
 
     font-family: var(--font-mono);
@@ -1361,7 +1361,7 @@ function restart() {
     border: 0;
     background: transparent;
 
-    color: var(--text-faint);
+    color: var(--text-dim);
 
     font-family: var(--font-mono);
     font-size: 0.62rem;
