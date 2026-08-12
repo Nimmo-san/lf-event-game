@@ -23,7 +23,7 @@ class GameResultCreate(BaseModel):
     player_id: str
 
     player_name: str = Field(
-        min_length=1,
+        min_length=2,
         max_length=100,
     )
 
