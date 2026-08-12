@@ -26,8 +26,8 @@ const error =
 const EMAIL_REGEX =
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const URL_REGEX =
-    /^(https?:\/\/|www\.)/i;
+const DOMAIN_REGEX =
+  /^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/.*)?$/i;
 
 function startGame() {
     error.value = ""
@@ -72,7 +72,7 @@ function validateCompanyName(
         return "Enter your company name, not your email address.";
     }
 
-    if (URL_REGEX.test(company)) {
+    if (DOMAIN_REGEX.test(company)) {
         return "Enter your company name, not a website.";
     }
 
