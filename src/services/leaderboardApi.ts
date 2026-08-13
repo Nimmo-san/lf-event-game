@@ -14,7 +14,7 @@ export interface PlayerRank {
   score: number;
 }
 
-export async function loadLeaderboard(): Promise<LeaderboardRow[]> {
+export async function getLeaderboard(): Promise<LeaderboardRow[]> {
   const response = await fetch(`${API_URL}/leaderboard`);
 
   if (!response.ok) {
@@ -26,6 +26,12 @@ export async function loadLeaderboard(): Promise<LeaderboardRow[]> {
 
 export async function getPlayerRank(playerId: string): Promise<PlayerRank> {
   const response = await fetch(`${API_URL}/leaderboard/rank/${playerId}`);
+
+  // change Promise value to <PlayerRank | null>
+  // // Player does not currently have a leaderboard entry.
+  // if (response.status === 404){
+  //   return null;
+  // }
 
   if (!response.ok) {
     throw new Error("Unable to retrieve leaderboard rank.");
