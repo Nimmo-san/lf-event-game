@@ -108,6 +108,8 @@ class GameResultResponse(BaseModel):
 class LeaderboardRow(BaseModel):
     rank: int
 
+    player_id: str
+
     player_name: str
 
     company_name: str
