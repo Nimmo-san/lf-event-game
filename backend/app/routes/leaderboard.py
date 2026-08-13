@@ -128,6 +128,7 @@ def get_leaderboard(
     return [
         {
             "rank": rank,
+            "player_id": player.player_id,
             "player_name": player.player_name,
             "company_name": player.company_name,
             "score": player.score,
