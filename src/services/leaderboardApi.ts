@@ -1,5 +1,13 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "/api";
 
+export interface LeaderboardRow {
+  rank: number;
+  player_name: string;
+  company_name: string;
+  score: number;
+  lightning_collected: number;
+}
+
 export interface PlayerRank {
   player_id: string;
   rank: number;

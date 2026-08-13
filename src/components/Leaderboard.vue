@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
+import type { LeaderboardRow } from "../services/leaderboardApi";
 
-interface LeaderboardRow {
-    rank: number;
-    player_name: string;
-    company_name: string;
-    score: number;
-    lightning_collected: number;
-}
 
 const props = withDefaults(
     defineProps<{
