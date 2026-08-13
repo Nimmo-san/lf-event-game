@@ -14,6 +14,16 @@ export interface PlayerRank {
   score: number;
 }
 
+export async function loadLeaderboard(): Promise<LeaderboardRow[]> {
+  const response = await fetch(`${API_URL}/leaderboard`);
+
+  if (!response.ok) {
+    throw new Error("Unable to retrieve leaderboard.");
+  }
+
+  return response.json();
+}
+
 export async function getPlayerRank(playerId: string): Promise<PlayerRank> {
   const response = await fetch(`${API_URL}/leaderboard/rank/${playerId}`);
 
