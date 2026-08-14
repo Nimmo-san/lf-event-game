@@ -338,7 +338,8 @@ onMounted(() => {
 
         <section v-if="!authenticated" class="admin-login-card">
             <p class="section-kicker">
-                ⚡ LIGHTNING FLIGHT
+                <i class="kicker-bolt">⚡</i>
+                LIGHTNING FLIGHT
             </p>
 
             <h1>
@@ -372,7 +373,8 @@ onMounted(() => {
             <header class="admin-header">
                 <div>
                     <p class="section-kicker">
-                        ⚡ LIGHTNING FLIGHT
+                        <i class="kicker-bolt">⚡</i>
+                        LIGHTNING FLIGHT
                     </p>
 
                     <h1>
@@ -607,6 +609,26 @@ onMounted(() => {
 
     font-family: var(--font-display);
     font-size: 2.3rem;
+}
+
+.section-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    margin: 0;
+
+    color: var(--volt);
+
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.kicker-bolt {
+    font-style: normal;
 }
 
 
