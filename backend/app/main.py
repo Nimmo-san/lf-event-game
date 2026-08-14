@@ -15,6 +15,7 @@ from app.routes.players import router as player_router
 from app.routes.leaderboard import (
     router as leaderboard_router,
 )
+from app.routes.admin import router as admin_router
 
 
 load_dotenv()
@@ -64,6 +65,10 @@ app.include_router(
 
 app.include_router(
     leaderboard_router,
+)
+
+app.include_router(
+    admin_router,
 )
 
 
