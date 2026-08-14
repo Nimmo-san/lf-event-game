@@ -7,6 +7,8 @@ from slowapi.errors import RateLimitExceeded
 import os
 from dotenv import load_dotenv
 
+from app.models.admin import AdminSession
+
 from app.database import Base
 from app.database import engine
 from app.rate_limit import limiter
