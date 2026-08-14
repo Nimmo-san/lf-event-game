@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from "vue";
 
 const API_URL =
     import.meta.env.VITE_API_URL ||
-    "http://localhost:8000/api";
+    "/api";
 
 interface AdminEntry {
     id: string;
@@ -78,6 +78,27 @@ function buildParams() {
     }
 
     return params;
+}
+
+async function checkSession() {
+    try {
+        const response = await fetch(`${API_URL}/admin/session`,
+            {
+                credentials: "include",
+            },
+        );
+
+        if (!response.ok) {
+            authenticated.value = false;
+            return
+        }
+
+        authenticated.value = true;
+
+        await loadEntries();
+    } catch {
+        authenticated.value = false;
+    }
 }
 
 async function login() {
@@ -329,7 +350,7 @@ function formatDate(
 }
 
 onMounted(() => {
-    void loadEntries();
+    void checkSession();
 });
 </script>
 
