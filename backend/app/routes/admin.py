@@ -101,6 +101,7 @@ def export_marketing_data(
         iter([output.getvalue()]),
         media_type="text/csv",
         headers={
-            "Content-Disposition": 'attachment; filename="lightning-flight-marketing.csv"'
+            "Content-Disposition": 'attachment; filename="lightning-flight-marketing.csv"',
+            "Cache-Control": "no-store",
         },
     )
