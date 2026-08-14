@@ -2,6 +2,10 @@ import csv
 import io
 import os
 import secrets
+import hashlib
+import uuid
+
+from datetime import datetime, timezone, timedelta
 
 from fastapi import (
     APIRouter,
@@ -19,6 +23,7 @@ from pydantic import BaseModel
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from app.models.admin import AdminSession
 from app.database import get_db
 from app.models.game import GameResult
 from app.models.leaderboard import LeaderboardEntry
@@ -35,7 +40,9 @@ ADMIN_EXPORT_KEY = os.environ.get(
     "ADMIN_EXPORT_KEY",
 )
 
-ADMIN_COOKIE = "lightning_admin"
+ADMIN_COOKIE = "lightning_admin_session"
+
+SESSION_DURATION_HOURS = 4
 
 IS_PRODUCTION = os.environ.get("ENVIRONMENT") == "production"
 
@@ -44,25 +51,72 @@ class AdminLoginRequest(BaseModel):
     key: str
 
 
+# TODO: validation for admin key
+# TypeError: comparing strings with non-ASCII characters is not supported
+
+
 def require_admin(
     request: Request,
+    db: Session = Depends(get_db),
 ):
-    cookie = request.cookies.get(
+
+    raw_token = request.cookies.get(
         ADMIN_COOKIE,
     )
 
-    if (
-        not ADMIN_EXPORT_KEY
-        or not cookie
-        or not secrets.compare_digest(
-            cookie,
-            ADMIN_EXPORT_KEY,
-        )
-    ):
+    if not raw_token:
         raise HTTPException(
             status_code=401,
             detail="Admin authentication required.",
         )
+
+    token_hash = hash_sesion_token(
+        raw_token,
+    )
+
+    session = (
+        db.query(AdminSession).filter(AdminSession.token_hash == token_hash).first()
+    )
+
+    if not session:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid admin session.",
+        )
+
+    now = datetime.now(timezone.utc)
+
+    expires_at = session.expires_at
+
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(
+            tzinfo=timezone.utc,
+        )
+
+    if expires_at <= now:
+        db.delete(session)
+        db.commit()
+
+        raise HTTPException(status_code=401, detail="Admin session expired.")
+
+    return session
+
+
+def hash_sesion_token(
+    token: str,
+) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+@router.get("/session")
+def admin_session(
+    _: AdminSession = Depends(
+        require_admin,
+    ),
+):
+    return {
+        "authenticated": True,
+    }
 
 
 @router.post("/login")
@@ -71,6 +125,7 @@ def admin_login(
     request: Request,
     payload: AdminLoginRequest,
     response: Response,
+    db: Session = Depends(get_db),
 ):
     if not ADMIN_EXPORT_KEY or not secrets.compare_digest(
         payload.key,
@@ -81,25 +136,65 @@ def admin_login(
             detail="Invalid admin key.",
         )
 
+    # token generation
+    raw_token = secrets.token_urlsafe(32)
+
+    token_hash = hash_sesion_token(raw_token)
+
+    now = datetime.now(timezone.utc)
+
+    expires_at = now + timedelta(
+        hours=SESSION_DURATION_HOURS,
+    )
+
+    session = AdminSession(
+        id=str(uuid.uuid4()),
+        token_hash=token_hash,
+        created_at=now,
+        expires_at=expires_at,
+    )
+
+    # add session to db
+    db.add(session)
+    db.commit()
+
     response.set_cookie(
         key=ADMIN_COOKIE,
-        value=ADMIN_EXPORT_KEY,
+        value=raw_token,
         httponly=True,
         secure=IS_PRODUCTION,
-        samesite="none", # different frontend site, otherwise its "strict"
-        max_age=60 * 60 * 4,
+        samesite="none",  # different frontend site, otherwise its "strict"
+        max_age=60 * 60 * SESSION_DURATION_HOURS,
         path="/",
     )
 
-    return {
-        "authenticated": True,
-    }
+    return {"authenticated": True, "expires_at": expires_at}
 
 
 @router.post("/logout")
 def admin_logout(
+    request: Request,
     response: Response,
+    db: Session = Depends(get_db),
 ):
+
+    raw_token = request.cookies.get(
+        ADMIN_COOKIE,
+    )
+
+    if raw_token:
+        token_hash = hash_sesion_token(
+            raw_token,
+        )
+
+        session = (
+            db.query(AdminSession).filter(AdminSession.token_hash == token_hash).first()
+        )
+
+        if session:
+            db.delete(session)
+            db.commit()
+
     response.delete_cookie(
         key=ADMIN_COOKIE,
         path="/",
@@ -131,7 +226,7 @@ def get_admin_entries(
         max_length=150,
     ),
     db: Session = Depends(get_db),
-    _: None = Depends(require_admin),
+    _: AdminSession = Depends(require_admin),
 ):
     query = db.query(
         LeaderboardEntry.id,
