@@ -150,4 +150,70 @@ async function login() {
 
     await loadEntries();
 }
+
+async function exportCsv() {
+    const params =
+        new URLSearchParams();
+
+    if (search.value.trim()) {
+        params.set(
+            "search",
+            search.value.trim(),
+        );
+    }
+
+    if (name.value.trim()) {
+        params.set(
+            "name",
+            name.value.trim(),
+        );
+    }
+
+    if (email.value.trim()) {
+        params.set(
+            "email",
+            email.value.trim(),
+        );
+    }
+
+    if (company.value.trim()) {
+        params.set(
+            "company",
+            company.value.trim(),
+        );
+    }
+
+    const response =
+        await fetch(
+            `${API_URL}/admin/export/marketing?${params}`,
+            {
+                credentials:
+                    "include",
+            },
+        );
+
+    if (!response.ok) {
+        throw new Error(
+            "Export failed.",
+        );
+    }
+
+    const blob =
+        await response.blob();
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const link =
+        document.createElement("a");
+
+    link.href = url;
+
+    link.download =
+        "lightning-flight-marketing.csv";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
 </script>
