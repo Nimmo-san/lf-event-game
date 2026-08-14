@@ -35,12 +35,9 @@ ADMIN_EXPORT_KEY = os.environ.get(
 def verify_admin_key(
     x_admin_key: str = Header(...),
 ):
-    if (
-        not ADMIN_EXPORT_KEY
-        or not secrets.compare_digest(
-            x_admin_key,
-            ADMIN_EXPORT_KEY,
-        )
+    if not ADMIN_EXPORT_KEY or not secrets.compare_digest(
+        x_admin_key,
+        ADMIN_EXPORT_KEY,
     ):
         raise HTTPException(
             status_code=403,
