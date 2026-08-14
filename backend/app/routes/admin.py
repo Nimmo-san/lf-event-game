@@ -3,6 +3,7 @@ import io
 import os
 
 from fastapi import (
+    Request,
     APIRouter,
     Depends,
     Header,
@@ -13,6 +14,7 @@ from fastapi.responses import StreamingResponse
 
 from sqlalchemy.orm import Session
 
+from app.rate_limit import limiter
 from app.database import get_db
 from app.models.game import GameResult
 from app.models.leaderboard import LeaderboardEntry
@@ -40,7 +42,9 @@ def verify_admin_key(
 
 
 @router.get("/export/marketing")
+@limiter.limit("10/minute")
 def export_marketing_data(
+    request: Request,
     db: Session = Depends(get_db),
     _: None = Depends(verify_admin_key),
 ):
