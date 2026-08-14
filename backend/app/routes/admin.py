@@ -86,7 +86,7 @@ def admin_login(
         value=ADMIN_EXPORT_KEY,
         httponly=True,
         secure=IS_PRODUCTION,
-        samesite="strict",
+        samesite="none", # different frontend site, otherwise its "strict"
         max_age=60 * 60 * 4,
         path="/",
     )
