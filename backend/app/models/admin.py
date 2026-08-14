@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Datetime, String
+from sqlalchemy import DateTime, String
 
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -23,13 +23,13 @@ class AdminSession(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        Datetime(timezone=True),
+        DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 
     expires_at: Mapped[datetime] = mapped_column(
-        Datetime(timezone=True),
+        DateTime(timezone=True),
         nullable=False,
         index=True,
     )
