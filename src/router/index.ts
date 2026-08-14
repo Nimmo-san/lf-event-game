@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import StartScreen from "../components/StartScreen.vue";
 import GameView from "../views/GameView.vue";
-import LeaderboardView from "../views/LeaderboardView.vue";
+// import LeaderboardView from "../views/LeaderboardView.vue";
 
 import { getPlayerSession } from "../services/playerSession";
 
@@ -14,6 +14,12 @@ const router = createRouter({
       path: "/",
       name: "start",
       component: StartScreen,
+    },
+    {
+      path: "/admin",
+      name: "admin",
+      component: () =>
+        import ("../views/AdminView.vue")
     },
 
     {
@@ -29,10 +35,8 @@ const router = createRouter({
     {
       path: "/leaderboard",
       name: "leaderboard",
-      component: LeaderboardView,
-      // meta: {
-      //   requiresPlayer: true,
-      // },
+      component: () =>
+        import ("../views/LeaderboardView.vue"),
     },
   ],
 });
