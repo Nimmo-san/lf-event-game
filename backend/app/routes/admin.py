@@ -70,7 +70,7 @@ def require_admin(
             detail="Admin authentication required.",
         )
 
-    token_hash = hash_sesion_token(
+    token_hash = hash_session_token(
         raw_token,
     )
 
@@ -114,7 +114,7 @@ def admin_key_matches(
     )
 
 
-def hash_sesion_token(
+def hash_session_token(
     token: str,
 ) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
@@ -150,7 +150,7 @@ def admin_login(
     # token generation
     raw_token = secrets.token_urlsafe(32)
 
-    token_hash = hash_sesion_token(raw_token)
+    token_hash = hash_session_token(raw_token)
 
     now = datetime.now(timezone.utc)
 
@@ -194,7 +194,7 @@ def admin_logout(
     )
 
     if raw_token:
-        token_hash = hash_sesion_token(
+        token_hash = hash_session_token(
             raw_token,
         )
 
