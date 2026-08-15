@@ -32,6 +32,10 @@ const name = ref("");
 const email = ref("");
 const company = ref("");
 
+const exludeIds = ref<Set<string>>(
+    new Set(),
+);
+
 const filtersActive = computed(() => {
     return Boolean(
         search.value.trim() ||
@@ -44,6 +48,20 @@ const filtersActive = computed(() => {
 const resultCount = computed(
     () => entries.value.length,
 );
+
+function toggleExluded(
+    id: string,
+) {
+    const updated = new Set(exludeIds.value);
+
+    if (updated.has(id)){
+        updated.delete(id);
+    } else {
+        updated.add(id);
+    }
+
+    exludeIds.value = updated;
+}
 
 function buildParams() {
     const params =
