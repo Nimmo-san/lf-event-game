@@ -49,14 +49,26 @@ const resultCount = computed(
     () => entries.value.length,
 );
 
-// const exportCount = computed(() => {
-//     return Math.max(
-//         0,
-//         entries.value.length - excludedIds.value.size,
-//     )
-// });
+const exportCount = computed(() => {
+    return entries.value.filter(
+        (entry) =>
+            !excludedIds.value.has(
+                entry.id,
+            ),
+    ).length;
+});
 
-function toggleExluded(
+const excludedVisibleCount =
+    computed(() => {
+        return entries.value.filter(
+            (entry) =>
+                excludedIds.value.has(
+                    entry.id,
+                ),
+        ).length;
+    });
+
+function toggleExcluded(
     id: string,
 ) {
     const updated = new Set(excludedIds.value);
@@ -68,6 +80,11 @@ function toggleExluded(
     }
 
     excludedIds.value = updated;
+}
+
+function resetExclusions() {
+    excludedIds.value =
+        new Set();
 }
 
 function buildParams() {
@@ -250,29 +267,49 @@ async function exportCsv() {
     error.value = "";
 
     try {
-        const params =
-            buildParams();
-
-        const query =
-            params.toString();
-
         const response =
             await fetch(
-                `${API_URL}/admin/export/marketing${query
-                    ? `?${query}`
-                    : ""
-                }`,
+                `${API_URL}/admin/export/marketing`,
                 {
+                    method: "POST",
+
                     credentials:
                         "include",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+
+                    body: JSON.stringify({
+                        search:
+                            search.value.trim()
+                            || null,
+
+                        name:
+                            name.value.trim()
+                            || null,
+
+                        email:
+                            email.value.trim()
+                            || null,
+
+                        company:
+                            company.value.trim()
+                            || null,
+
+                        excluded_ids:
+                            Array.from(
+                                excludedIds.value,
+                            ),
+                    }),
                 },
             );
 
-        if (
-            response.status === 401
-        ) {
-            authenticated.value =
-                false;
+        if (response.status === 401) {
+            authenticated.value = false;
+
+            entries.value = [];
 
             return;
         }
@@ -506,17 +543,30 @@ onMounted(() => {
                         }}
                     </button>
 
+
                     <button class="secondary-button" type="button" :disabled="!filtersActive" @click="clearFilters">
-                        Clear
+                        Clear filters
                     </button>
 
+
+                    <button v-if="excludedIds.size > 0" class="secondary-button" type="button" @click="resetExclusions">
+                        Include all
+                    </button>
+
+
+                    <span v-if="excludedVisibleCount > 0" class="excluded-count">
+                        {{ excludedVisibleCount }}
+                        excluded
+                    </span>
+
+
                     <button class="export-button" type="button" :disabled="exportLoading ||
-                        entries.length === 0
+                        exportCount === 0
                         " @click="exportCsv">
                         {{
                             exportLoading
                                 ? "Exporting..."
-                                : `Export ${resultCount} records`
+                                : `Export ${exportCount} records`
                         }}
                     </button>
 
@@ -542,8 +592,8 @@ onMounted(() => {
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>
-                                    Exclude
+                                <th class="exclude-column">
+                                    Export
                                 </th>
 
                                 <th>
@@ -573,12 +623,14 @@ onMounted(() => {
                         </thead>
 
                         <tbody>
-                            <tr v-for="entry in entries" :key="entry.id" :class="{ 'entry-excluded' :
-                                excludedIds.has(entry.id), }">
-                                <td>
-                                    <input type="checkbox" :checked="excludedIds.has(entry.id)"
-                                        :aria-label="`Exclude ${entry.player_name}`" @change="
-                                            toggleExluded(entry.id)" />
+                            <tr v-for="entry in entries" :key="entry.id" :class="{
+                                'entry-excluded':
+                                    excludedIds.has(entry.id),
+                            }">
+                                <td class="exclude-column">
+                                    <input type="checkbox" :checked="!excludedIds.has(entry.id,)"
+                                        :aria-label="`Include ${entry.player_name} in export`"
+                                        @change="toggleExcluded(entry.id,)" />
                                 </td>
                                 <td>
                                     <strong>
@@ -631,7 +683,7 @@ onMounted(() => {
 
     background:
         radial-gradient(circle at 50% 0%,
-            rgba(var(--volt-rgb), 0.08),
+            rgba(var(--volt-rgb), .08),
             transparent 34%),
         var(--ink);
 
@@ -677,9 +729,9 @@ onMounted(() => {
     color: var(--volt);
 
     font-family: var(--font-mono);
-    font-size: 0.6rem;
+    font-size: .6rem;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: .14em;
     text-transform: uppercase;
 }
 
@@ -693,7 +745,7 @@ onMounted(() => {
 
     color: var(--text-dim);
 
-    font-size: 0.85rem;
+    font-size: .85rem;
     line-height: 1.6;
 }
 
@@ -709,10 +761,10 @@ onMounted(() => {
     color: var(--text-faint);
 
     font-family: var(--font-mono);
-    font-size: 0.58rem;
+    font-size: .58rem;
     font-weight: 700;
 
-    letter-spacing: 0.12em;
+    letter-spacing: .12em;
 }
 
 
@@ -730,7 +782,7 @@ onMounted(() => {
     color: var(--text);
 
     background:
-        rgba(255, 255, 255, 0.035);
+        rgba(255, 255, 255, .035);
 
     font: inherit;
 }
@@ -739,7 +791,7 @@ onMounted(() => {
 .admin-login-form input:focus,
 .filter-field input:focus {
     border-color:
-        rgba(var(--volt-rgb), 0.55);
+        rgba(var(--volt-rgb), .55);
 }
 
 
@@ -818,10 +870,10 @@ onMounted(() => {
     color: var(--text-faint);
 
     font-family: var(--font-mono);
-    font-size: 0.58rem;
+    font-size: .58rem;
     font-weight: 700;
 
-    letter-spacing: 0.1em;
+    letter-spacing: .1em;
 }
 
 
@@ -885,7 +937,7 @@ onMounted(() => {
     border-radius: 11px;
 
     font-family: var(--font-display);
-    font-size: 0.76rem;
+    font-size: .76rem;
     font-weight: 700;
 
     cursor: pointer;
@@ -911,24 +963,24 @@ onMounted(() => {
     color: var(--text-dim);
 
     background:
-        rgba(255, 255, 255, 0.03);
+        rgba(255, 255, 255, .03);
 }
 
 
 .export-button {
     margin-left: auto;
 
-    border: 1px solid rgba(var(--cyan-rgb), 0.3);
+    border: 1px solid rgba(var(--cyan-rgb), .3);
 
     color: var(--cyan);
 
     background:
-        rgba(var(--cyan-rgb), 0.08);
+        rgba(var(--cyan-rgb), .08);
 }
 
 
 button:disabled {
-    opacity: 0.45;
+    opacity: .45;
 
     cursor: not-allowed;
 }
@@ -968,12 +1020,12 @@ button:disabled {
     color: var(--text-faint);
 
     background:
-        rgba(255, 255, 255, 0.025);
+        rgba(255, 255, 255, .025);
 
     font-family: var(--font-mono);
-    font-size: 0.56rem;
+    font-size: .56rem;
 
-    letter-spacing: 0.09em;
+    letter-spacing: .09em;
 
     text-align: left;
     text-transform: uppercase;
@@ -987,7 +1039,7 @@ button:disabled {
 
     color: var(--text-dim);
 
-    font-size: 0.76rem;
+    font-size: .76rem;
 
     white-space: nowrap;
 }
@@ -996,8 +1048,41 @@ button:disabled {
     opacity: .4;
 }
 
-.entry-excluded td {
-    text-decoration-color: var(--text-faint);
+.entry-excluded td:not(.exclude-column) {
+    filter: grayscale(.8);
+}
+
+.entry-excluded:hover {
+    opacity: .5;
+}
+
+.exclude-column {
+    width: 64px;
+
+    text-align: center !important;
+}
+
+.exclude-column input {
+    width: 17px;
+    height: 17px;
+
+    accent-color: var(--volt);
+
+    cursor: pointer;
+}
+
+.excluded-count {
+    display: inline-flex;
+
+    align-items: center;
+
+    color: var(--coral);
+
+    font-family: var(--font-mono);
+    font-size: .64rem;
+    font-weight: 700;
+
+    white-space: nowrap;
 }
 
 
@@ -1028,7 +1113,7 @@ button:disabled {
     color: var(--text-faint);
 
     font-family: var(--font-mono);
-    font-size: 0.78rem;
+    font-size: .78rem;
 }
 
 
@@ -1041,7 +1126,7 @@ button:disabled {
     color: var(--coral);
 
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: .7rem;
 }
 
 
