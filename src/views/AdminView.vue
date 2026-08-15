@@ -49,12 +49,12 @@ const resultCount = computed(
     () => entries.value.length,
 );
 
-const exportCount = computed(() => {
-    return Math.max(
-        0,
-        entries.value.length - excludedIds.value.size,
-    )
-});
+// const exportCount = computed(() => {
+//     return Math.max(
+//         0,
+//         entries.value.length - excludedIds.value.size,
+//     )
+// });
 
 function toggleExluded(
     id: string,
