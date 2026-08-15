@@ -18,7 +18,7 @@ from fastapi import (
 
 from fastapi.responses import StreamingResponse
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -48,11 +48,10 @@ IS_PRODUCTION = os.environ.get("ENVIRONMENT") == "production"
 
 
 class AdminLoginRequest(BaseModel):
-    key: str
-
-
-# TODO: validation for admin key
-# TypeError: comparing strings with non-ASCII characters is not supported
+    key: str = Field(
+        min_length=8,
+        max_length=256,
+    )
 
 
 def require_admin(
@@ -102,6 +101,18 @@ def require_admin(
     return session
 
 
+def admin_key_matches(
+    key: str,
+) -> bool:
+    if not ADMIN_EXPORT_KEY:
+        return False
+
+    return secrets.compare_digest(
+        key.encode("utf-8"),
+        ADMIN_EXPORT_KEY.encode("utf-8"),
+    )
+
+
 def hash_sesion_token(
     token: str,
 ) -> str:
@@ -127,9 +138,8 @@ def admin_login(
     response: Response,
     db: Session = Depends(get_db),
 ):
-    if not ADMIN_EXPORT_KEY or not secrets.compare_digest(
+    if not admin_key_matches(
         payload.key,
-        ADMIN_EXPORT_KEY,
     ):
         raise HTTPException(
             status_code=401,
