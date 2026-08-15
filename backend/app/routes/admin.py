@@ -20,7 +20,7 @@ from fastapi.responses import StreamingResponse
 
 from pydantic import BaseModel, Field
 
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session
 
 from app.models.admin import AdminSession
@@ -237,9 +237,18 @@ def get_admin_entries(
         max_length=150,
     ),
     db: Session = Depends(get_db),
-    _: AdminSession = Depends(require_admin),
+    _: AdminSession = Depends(
+        require_admin,
+    ),
 ):
-    query = db.query(
+    # Rank every leaderboard entry belonging to the
+    # same email address.
+    # Rank 1 = that email's best-scoring submission.
+    # lower(email) ensures:
+    # John@Example.com
+    # john@example.com
+    # are treated as the same contact.
+    ranked_entries = db.query(
         LeaderboardEntry.id,
         LeaderboardEntry.email,
         LeaderboardEntry.created_at,
@@ -247,34 +256,71 @@ def get_admin_entries(
         GameResult.company_name,
         GameResult.score,
         GameResult.lightning_collected,
+        func.row_number()
+        .over(
+            partition_by=func.lower(
+                LeaderboardEntry.email,
+            ),
+            order_by=(
+                GameResult.score.desc(),
+                LeaderboardEntry.created_at.asc(),
+            ),
+        )
+        .label("email_rank"),
     ).join(
         GameResult,
         GameResult.id == LeaderboardEntry.game_id,
     )
 
+    # Apply filters before deduplication.
+    # This means the unique-contact result is
+    # calculated from the records matching the
+    # current admin filters.
     if search:
         value = f"%{search.strip()}%"
 
-        query = query.filter(
+        ranked_entries = ranked_entries.filter(
             or_(
-                GameResult.player_name.ilike(value),
-                GameResult.company_name.ilike(value),
-                LeaderboardEntry.email.ilike(value),
+                GameResult.player_name.ilike(
+                    value,
+                ),
+                GameResult.company_name.ilike(
+                    value,
+                ),
+                LeaderboardEntry.email.ilike(
+                    value,
+                ),
             )
         )
 
     if name:
-        query = query.filter(GameResult.player_name.ilike(f"%{name.strip()}%"))
+        ranked_entries = ranked_entries.filter(
+            GameResult.player_name.ilike(f"%{name.strip()}%")
+        )
 
     if email:
-        query = query.filter(LeaderboardEntry.email.ilike(f"%{email.strip()}%"))
+        ranked_entries = ranked_entries.filter(
+            LeaderboardEntry.email.ilike(f"%{email.strip()}%")
+        )
 
     if company:
-        query = query.filter(GameResult.company_name.ilike(f"%{company.strip()}%"))
+        ranked_entries = ranked_entries.filter(
+            GameResult.company_name.ilike(f"%{company.strip()}%")
+        )
+
+    # Turn the ranked query into a subquery so we
+    # can select only rank 1 for each email.
+    ranked_entries = ranked_entries.subquery()
 
     rows = (
-        query.order_by(
-            LeaderboardEntry.created_at.desc(),
+        db.query(
+            ranked_entries,
+        )
+        .filter(
+            ranked_entries.c.email_rank == 1,
+        )
+        .order_by(
+            ranked_entries.c.created_at.desc(),
         )
         .limit(500)
         .all()
@@ -302,12 +348,18 @@ def export_marketing_data(
     db: Session = Depends(get_db),
     _: AdminSession = Depends(require_admin),
 ):
-    query = db.query(
+    ranked_entries = db.query(
         LeaderboardEntry.id,
         LeaderboardEntry.email,
         LeaderboardEntry.created_at,
         GameResult.player_name,
         GameResult.company_name,
+        func.row_number()
+        .over(
+            partition_by=func.lower(LeaderboardEntry.email),
+            order_by=LeaderboardEntry.created_at.asc(),
+        )
+        .label("email_rank"),
     ).join(
         GameResult,
         GameResult.id == LeaderboardEntry.game_id,
@@ -316,7 +368,7 @@ def export_marketing_data(
     if payload.search:
         value = f"%{payload.search.strip()}%"
 
-        query = query.filter(
+        ranked_entries = ranked_entries.filter(
             or_(
                 GameResult.player_name.ilike(value),
                 GameResult.company_name.ilike(value),
@@ -325,26 +377,35 @@ def export_marketing_data(
         )
 
     if payload.name:
-        query = query.filter(GameResult.player_name.ilike(f"%{payload.name.strip()}%"))
+        ranked_entries = ranked_entries.filter(
+            GameResult.player_name.ilike(f"%{payload.name.strip()}%")
+        )
 
     if payload.email:
-        query = query.filter(LeaderboardEntry.email.ilike(f"%{payload.email.strip()}%"))
+        ranked_entries = ranked_entries.filter(
+            LeaderboardEntry.email.ilike(f"%{payload.email.strip()}%")
+        )
 
     if payload.company:
-        query = query.filter(
+        ranked_entries = ranked_entries.filter(
             GameResult.company_name.ilike(f"%{payload.company.strip()}%")
         )
 
     if payload.excluded_ids:
-        query = query.filter(
+        ranked_entries = ranked_entries.filter(
             ~LeaderboardEntry.id.in_(
                 payload.excluded_ids,
             )
         )
 
-    rows = query.order_by(
-        LeaderboardEntry.created_at.asc(),
-    ).all()
+    ranked_entries = ranked_entries.subquery()
+
+    rows = (
+        db.query(ranked_entries)
+        .filter(ranked_entries.c.email_rank == 1)
+        .order_by(ranked_entries.c.created_at.asc())
+        .all()
+    )
 
     output = io.StringIO()
 
