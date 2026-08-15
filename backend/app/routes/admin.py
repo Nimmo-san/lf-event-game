@@ -28,6 +28,7 @@ from app.database import get_db
 from app.models.game import GameResult
 from app.models.leaderboard import LeaderboardEntry
 from app.rate_limit import limiter
+from app.schemas.player import MarketingExportRequest
 
 
 router = APIRouter(
@@ -293,30 +294,16 @@ def get_admin_entries(
     ]
 
 
-@router.get("/export/marketing")
+@router.post("/export/marketing")
 @limiter.limit("10/minute")
 def export_marketing_data(
     request: Request,
-    search: str | None = Query(
-        default=None,
-        max_length=150,
-    ),
-    name: str | None = Query(
-        default=None,
-        max_length=100,
-    ),
-    email: str | None = Query(
-        default=None,
-        max_length=255,
-    ),
-    company: str | None = Query(
-        default=None,
-        max_length=150,
-    ),
+    payload: MarketingExportRequest,
     db: Session = Depends(get_db),
-    _: None = Depends(require_admin),
+    _: AdminSession = Depends(require_admin),
 ):
     query = db.query(
+        LeaderboardEntry.id,
         LeaderboardEntry.email,
         LeaderboardEntry.created_at,
         GameResult.player_name,
@@ -326,8 +313,8 @@ def export_marketing_data(
         GameResult.id == LeaderboardEntry.game_id,
     )
 
-    if search:
-        value = f"%{search.strip()}%"
+    if payload.search:
+        value = f"%{payload.search.strip()}%"
 
         query = query.filter(
             or_(
@@ -337,14 +324,23 @@ def export_marketing_data(
             )
         )
 
-    if name:
-        query = query.filter(GameResult.player_name.ilike(f"%{name.strip()}%"))
+    if payload.name:
+        query = query.filter(GameResult.player_name.ilike(f"%{payload.name.strip()}%"))
 
-    if email:
-        query = query.filter(LeaderboardEntry.email.ilike(f"%{email.strip()}%"))
+    if payload.email:
+        query = query.filter(LeaderboardEntry.email.ilike(f"%{payload.email.strip()}%"))
 
-    if company:
-        query = query.filter(GameResult.company_name.ilike(f"%{company.strip()}%"))
+    if payload.company:
+        query = query.filter(
+            GameResult.company_name.ilike(f"%{payload.company.strip()}%")
+        )
+
+    if payload.excluded_ids:
+        query = query.filter(
+            ~LeaderboardEntry.id.in_(
+                payload.excluded_ids,
+            )
+        )
 
     rows = query.order_by(
         LeaderboardEntry.created_at.asc(),
@@ -352,9 +348,7 @@ def export_marketing_data(
 
     output = io.StringIO()
 
-    writer = csv.writer(
-        output,
-    )
+    writer = csv.writer(output)
 
     writer.writerow(
         [
