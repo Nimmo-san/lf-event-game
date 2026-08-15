@@ -32,7 +32,7 @@ const name = ref("");
 const email = ref("");
 const company = ref("");
 
-const exludeIds = ref<Set<string>>(
+const excludedIds = ref<Set<string>>(
     new Set(),
 );
 
@@ -49,18 +49,25 @@ const resultCount = computed(
     () => entries.value.length,
 );
 
+const exportCount = computed(() => {
+    return Math.max(
+        0,
+        entries.value.length - excludedIds.value.size,
+    )
+});
+
 function toggleExluded(
     id: string,
 ) {
-    const updated = new Set(exludeIds.value);
+    const updated = new Set(excludedIds.value);
 
-    if (updated.has(id)){
+    if (updated.has(id)) {
         updated.delete(id);
     } else {
         updated.add(id);
     }
 
-    exludeIds.value = updated;
+    excludedIds.value = updated;
 }
 
 function buildParams() {
@@ -536,6 +543,10 @@ onMounted(() => {
                         <thead>
                             <tr>
                                 <th>
+                                    Exclude
+                                </th>
+
+                                <th>
                                     Name
                                 </th>
 
@@ -562,7 +573,13 @@ onMounted(() => {
                         </thead>
 
                         <tbody>
-                            <tr v-for="entry in entries" :key="entry.id">
+                            <tr v-for="entry in entries" :key="entry.id" :class="{ 'entry-excluded' :
+                                excludedIds.has(entry.id), }">
+                                <td>
+                                    <input type="checkbox" :checked="excludedIds.has(entry.id)"
+                                        :aria-label="`Exclude ${entry.player_name}`" @change="
+                                            toggleExluded(entry.id)" />
+                                </td>
                                 <td>
                                     <strong>
                                         {{ entry.player_name }}
@@ -973,6 +990,14 @@ button:disabled {
     font-size: 0.76rem;
 
     white-space: nowrap;
+}
+
+.entry-excluded {
+    opacity: .4;
+}
+
+.entry-excluded td {
+    text-decoration-color: var(--text-faint);
 }
 
 
