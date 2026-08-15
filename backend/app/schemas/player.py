@@ -145,3 +145,15 @@ class PlayerRankResponse(BaseModel):
     player_id: str
     rank: int
     score: int
+
+
+class MarketingExportRequest(BaseModel):
+    search: str | None = None
+    name: str | None = None
+    email: str | None = None
+    company: str | None = None
+
+    excluded_ids: list[str] = Field(
+        default_factory=list,
+        max_length=500,
+    )
