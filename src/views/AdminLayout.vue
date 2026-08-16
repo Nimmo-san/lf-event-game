@@ -3,27 +3,23 @@ import { onMounted, provide, ref } from "vue"
 
 import {
     AdminAuthError,
-    checkAdminSession,
     adminLogin,
-    adminLogout
+    adminLogout,
+    checkAdminSession,
 } from "../services/adminApi"
 
-// null = "still checking", so the login form doesn't flash
-// on screen for a moment while the session check is in flight.
 const authenticated = ref<boolean | null>(null)
 
 const adminKey = ref("")
 const loginError = ref("")
 const loggingIn = ref(false)
 
-const sidebarOpen = ref(false)
+const sidebarOpen = ref(
+    !window.matchMedia("(max-width: 860px)").matches,
+)
 
-/*
- * Provided to child route views (AdminDashboard, AdminExport)
- * so a 401 from *either* tab's own API calls consistently
- * bounces back to the login screen, without each tab needing
- * its own copy of "if 401, set authenticated = false".
- */
+const isMobile = window.matchMedia("(max-width: 860px)").matches
+
 function handleAdminError(err: unknown): boolean {
     if (err instanceof AdminAuthError) {
         authenticated.value = false
@@ -34,6 +30,16 @@ function handleAdminError(err: unknown): boolean {
 }
 
 provide("handleAdminError", handleAdminError)
+
+function toggleSidebar() {
+    sidebarOpen.value = !sidebarOpen.value
+}
+
+function closeSidebarOnMobileNav() {
+    if (isMobile) {
+        sidebarOpen.value = false
+    }
+}
 
 async function checkSession() {
     authenticated.value = await checkAdminSession()
@@ -66,7 +72,6 @@ async function logout() {
         await adminLogout()
     } finally {
         authenticated.value = false
-        sidebarOpen.value = false
     }
 }
 
@@ -76,14 +81,9 @@ onMounted(checkSession)
 <template>
     <main class="admin-page">
 
-        <!-- STILL CHECKING SESSION -->
-
         <div v-if="authenticated === null" class="admin-checking" aria-live="polite">
             Checking session...
         </div>
-
-
-        <!-- LOGIN -->
 
         <section v-else-if="!authenticated" class="admin-login-card">
             <p class="section-kicker">
@@ -91,9 +91,7 @@ onMounted(checkSession)
                 LIGHTNING FLIGHT
             </p>
 
-            <h1>
-                Admin
-            </h1>
+            <h1>Admin</h1>
 
             <p class="admin-intro">
                 Sign in to view analytics and export
@@ -101,9 +99,7 @@ onMounted(checkSession)
             </p>
 
             <form class="admin-login-form" @submit.prevent="login">
-                <label for="admin-key">
-                    Admin key
-                </label>
+                <label for="admin-key">Admin key</label>
 
                 <input id="admin-key" v-model="adminKey" type="password" autocomplete="current-password"
                     placeholder="Enter admin key" />
@@ -118,45 +114,55 @@ onMounted(checkSession)
             </form>
         </section>
 
-
-        <!-- AUTHENTICATED SHELL -->
-
         <div v-else class="admin-shell">
 
-            <button type="button" class="sidebar-toggle" :aria-expanded="sidebarOpen" aria-controls="admin-sidebar"
-                @click="sidebarOpen = !sidebarOpen">
+            <div v-if="sidebarOpen && isMobile" class="sidebar-backdrop" @click="sidebarOpen = false"></div>
+
+            <button type="button" class="mobile-toggle" :aria-expanded="sidebarOpen" aria-label="Toggle navigation"
+                @click="toggleSidebar">
                 <span aria-hidden="true">☰</span>
                 Menu
             </button>
 
-            <div v-if="sidebarOpen" class="sidebar-backdrop" @click="sidebarOpen = false"></div>
+            <nav class="admin-sidebar" :class="{
+                'admin-sidebar--collapsed': !sidebarOpen && !isMobile,
+                'admin-sidebar--open': sidebarOpen && isMobile,
+            }" aria-label="Admin">
 
-            <nav id="admin-sidebar" class="admin-sidebar" :class="{ 'admin-sidebar--open': sidebarOpen }"
-                aria-label="Admin">
+                <div class="sidebar-top">
+                    <p v-if="sidebarOpen" class="section-kicker">
+                        <i class="kicker-bolt">⚡</i>
+                        LIGHTNING FLIGHT
+                    </p>
 
-                <p class="section-kicker">
-                    <i class="kicker-bolt">⚡</i>
-                    LIGHTNING FLIGHT
-                </p>
+                    <button type="button" class="sidebar-toggle" :aria-expanded="sidebarOpen"
+                        aria-label="Toggle navigation" @click="toggleSidebar">
+                        <span aria-hidden="true">☰</span>
+                    </button>
+                </div>
 
-                <h1 class="sidebar-title">
+                <h1 v-if="sidebarOpen" class="sidebar-title">
                     Event Admin
                 </h1>
 
                 <div class="sidebar-links">
-                    <router-link to="/admin/dashboard" class="nav-link" @click="sidebarOpen = false">
+                    <router-link to="/admin/dashboard" class="nav-link" :title="!sidebarOpen ? 'Dashboard' : undefined"
+                        @click="closeSidebarOnMobileNav">
                         <span aria-hidden="true">📊</span>
-                        Dashboard
+                        <span v-if="sidebarOpen" class="nav-label">Dashboard</span>
                     </router-link>
 
-                    <router-link to="/admin/export" class="nav-link" @click="sidebarOpen = false">
+                    <router-link to="/admin/export" class="nav-link" :title="!sidebarOpen ? 'Export data' : undefined"
+                        @click="closeSidebarOnMobileNav">
                         <span aria-hidden="true">📤</span>
-                        Export data
+                        <span v-if="sidebarOpen" class="nav-label">Export data</span>
                     </router-link>
                 </div>
 
-                <button class="logout-button" type="button" @click="logout">
-                    Logout
+                <button class="logout-button" type="button" :title="!sidebarOpen ? 'Logout' : undefined"
+                    @click="logout">
+                    <span aria-hidden="true">🚪</span>
+                    <span v-if="sidebarOpen" class="nav-label">Logout</span>
                 </button>
 
             </nav>
@@ -173,21 +179,20 @@ onMounted(checkSession)
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
 
+/*
+ * Page is height-LOCKED to the viewport.
+ */
 .admin-page {
     width: 100%;
-    min-height: 100dvh;
+    height: 100dvh;
+
+    overflow: hidden;
 
     color: var(--text);
-
     background: var(--ink);
 
     font-family: var(--font-body);
 }
-
-
-/* =========================
-   SHARED KICKER
-========================= */
 
 .section-kicker {
     display: inline-flex;
@@ -209,15 +214,10 @@ onMounted(checkSession)
     font-style: normal;
 }
 
-
-/* =========================
-   CHECKING / LOGIN
-========================= */
-
 .admin-checking {
     display: grid;
 
-    min-height: 100dvh;
+    height: 100%;
 
     place-content: center;
 
@@ -302,18 +302,16 @@ onMounted(checkSession)
     font-size: 0.7rem;
 }
 
-
-/* =========================
-   BUTTONS (shared)
-========================= */
-
-.primary-button,
-.logout-button {
+.primary-button {
     min-height: 42px;
 
     padding: 0 16px;
 
+    border: 0;
     border-radius: 11px;
+
+    color: var(--ink);
+    background: linear-gradient(100deg, var(--volt), var(--volt-light));
 
     font-family: var(--font-display);
     font-size: 0.76rem;
@@ -322,58 +320,36 @@ onMounted(checkSession)
     cursor: pointer;
 }
 
-.primary-button {
-    border: 0;
-
-    color: var(--ink);
-    background: linear-gradient(100deg, var(--volt), var(--volt-light));
-}
-
 .primary-button:hover:not(:disabled) {
     filter: brightness(1.06);
 }
 
-.logout-button {
-    border: 1px solid var(--line);
-
-    color: var(--text-dim);
-    background: rgba(255, 255, 255, 0.03);
-}
-
-.logout-button:hover {
-    color: var(--text);
-    border-color: rgba(var(--coral-rgb), 0.4);
-}
-
-button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
-
-.primary-button:focus-visible,
-.logout-button:focus-visible {
+.primary-button:focus-visible {
     outline: 2px solid var(--cyan);
     outline-offset: 2px;
 }
 
+.primary-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 
 /* =========================
-   SHELL / SIDEBAR
+   SHELL
 ========================= */
 
 .admin-shell {
     display: flex;
 
-    min-height: 100dvh;
+    height: 100%;
 }
 
-.sidebar-toggle {
-    display: none;
-}
 
-.sidebar-backdrop {
-    display: none;
-}
+/* =========================
+   SIDEBAR — always exactly
+   one viewport tall
+========================= */
 
 .admin-sidebar {
     display: flex;
@@ -381,37 +357,107 @@ button:disabled {
     flex: 0 0 240px;
     flex-direction: column;
 
-    padding: 24px 18px;
+    height: 100%;
+
+    padding: 18px 14px;
 
     border-right: 1px solid var(--line);
 
     background: var(--surface);
+
+    transition: flex-basis 160ms ease;
+}
+
+.admin-sidebar--collapsed {
+    flex-basis: 68px;
+
+    align-items: center;
+
+    padding: 18px 10px;
+}
+
+.sidebar-top {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+
+    margin-bottom: 14px;
+}
+
+.admin-sidebar--collapsed .sidebar-top {
+    justify-content: center;
+}
+
+.sidebar-toggle {
+    display: grid;
+
+    flex-shrink: 0;
+
+    width: 30px;
+    height: 30px;
+
+    place-items: center;
+
+    border: 1px solid var(--line);
+    border-radius: 8px;
+
+    color: var(--text-dim);
+    background: transparent;
+
+    font-size: 0.9rem;
+
+    cursor: pointer;
+}
+
+.sidebar-toggle:hover {
+    color: var(--text);
+    border-color: rgba(var(--volt-rgb), 0.4);
+}
+
+.sidebar-toggle:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
 }
 
 .sidebar-title {
-    margin: 8px 0 24px;
+    margin: 0 0 20px;
+
+    color: var(--text);
 
     font-family: var(--font-display);
-    font-size: 1.3rem;
+    font-size: 1.2rem;
 }
 
 .sidebar-links {
     display: grid;
     gap: 4px;
 
+    width: 100%;
+
+    /*
+     * Pushes the logout button to the bottom of the sidebar.
+     */
     margin-bottom: auto;
 }
 
-.nav-link {
+.nav-link,
+.logout-button {
     display: flex;
     align-items: center;
     gap: 10px;
 
+    width: 100%;
+
     padding: 11px 12px;
 
+    border: 0;
     border-radius: 10px;
 
     color: var(--text-dim);
+    background: transparent;
 
     font-family: var(--font-display);
     font-size: 0.85rem;
@@ -419,32 +465,58 @@ button:disabled {
 
     text-decoration: none;
 
+    cursor: pointer;
+
     transition: background 120ms ease, color 120ms ease;
 }
 
-.nav-link:hover {
+.admin-sidebar--collapsed .nav-link,
+.admin-sidebar--collapsed .logout-button {
+    justify-content: center;
+
+    padding: 11px;
+}
+
+.nav-link:hover,
+.logout-button:hover {
     color: var(--text);
     background: rgba(255, 255, 255, 0.04);
 }
 
-.nav-link:focus-visible {
+.nav-link:focus-visible,
+.logout-button:focus-visible {
     outline: 2px solid var(--cyan);
     outline-offset: -2px;
 }
 
-/*
- * Vue Router applies this class (and aria-current="page")
- * to the matching link automatically — no manual active-
- * state computation needed.
- */
 .nav-link.router-link-active {
     color: var(--ink);
     background: linear-gradient(100deg, var(--volt), var(--volt-light));
 }
 
+.logout-button {
+    margin-top: 12px;
+
+    color: var(--text-faint);
+}
+
+.logout-button:hover {
+    color: var(--coral);
+    background: rgba(var(--coral-rgb), 0.08);
+}
+
+
+/* =========================
+   CONTENT — the only
+   scrollable region
+========================= */
+
 .admin-content {
     flex: 1;
     min-width: 0;
+    min-height: 0;
+
+    height: 100%;
 
     padding: 28px;
 
@@ -453,45 +525,51 @@ button:disabled {
 
 
 /* =========================
-   MOBILE — collapsible sidebar
+   MOBILE — overlay instead
+   of a persistent rail
 ========================= */
+
+.mobile-toggle {
+    display: none;
+}
 
 @media (max-width: 860px) {
 
-    .admin-shell {
-        display: block;
+    .sidebar-top {
+        display: none;
     }
 
-    .sidebar-toggle {
+    .mobile-toggle {
         display: flex;
         align-items: center;
         gap: 8px;
 
-        width: 100%;
+        position: fixed;
+        top: 14px;
+        left: 14px;
+        z-index: 25;
 
-        padding: 14px 16px;
+        padding: 9px 14px;
 
-        border: 0;
-        border-bottom: 1px solid var(--line);
+        border: 1px solid var(--line);
+        border-radius: 10px;
 
         color: var(--text);
         background: var(--surface);
 
         font-family: var(--font-display);
-        font-size: 0.85rem;
+        font-size: 0.78rem;
         font-weight: 700;
 
         cursor: pointer;
     }
 
-    .sidebar-toggle:focus-visible {
+    .mobile-toggle:focus-visible {
         outline: 2px solid var(--cyan);
-        outline-offset: -2px;
+        outline-offset: 2px;
     }
 
     .sidebar-backdrop {
-        display: block;
-
         position: fixed;
         inset: 0;
         z-index: 15;
@@ -506,8 +584,7 @@ button:disabled {
         left: 0;
         z-index: 20;
 
-        flex: 0 0 auto;
-        width: min(78vw, 280px);
+        flex-basis: min(78vw, 280px);
 
         transform: translateX(-100%);
 
@@ -520,6 +597,7 @@ button:disabled {
 
     .admin-content {
         padding: 18px;
+        padding-top: 64px;
     }
 }
 </style>

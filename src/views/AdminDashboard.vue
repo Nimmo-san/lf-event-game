@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, ref } from "vue"
+import { inject, nextTick, onBeforeUnmount, onMounted, ref } from "vue"
+import { Chart, registerables } from "chart.js"
 
 import {
+    getAdminAnalytics,
     type AnalyticsResponse,
-    getAdminAnalytics
 } from "../services/adminApi"
+
+Chart.register(...registerables)
 
 const handleAdminError =
     inject<(err: unknown) => boolean>("handleAdminError")
@@ -13,44 +16,13 @@ const analytics = ref<AnalyticsResponse | null>(null)
 const loading = ref(true)
 const error = ref("")
 
-const maxGamesOverTime = computed(() => {
-    if (!analytics.value) {
-        return 1
-    }
+const gamesOverTimeCanvas = ref<HTMLCanvasElement | null>(null)
+const scoreDistCanvas = ref<HTMLCanvasElement | null>(null)
+const gamesPerPlayerCanvas = ref<HTMLCanvasElement | null>(null)
 
-    return Math.max(
-        1,
-        ...analytics.value.activity.games_over_time.map(
-            (item) => item.games,
-        ),
-    )
-})
-
-const maxScoreBucket = computed(() => {
-    if (!analytics.value) {
-        return 1
-    }
-
-    return Math.max(
-        1,
-        ...analytics.value.distributions.scores.map(
-            (item) => item.games,
-        ),
-    )
-})
-
-const maxReplayPlayers = computed(() => {
-    if (!analytics.value) {
-        return 1
-    }
-
-    return Math.max(
-        1,
-        ...analytics.value.distributions.games_per_player.map(
-            (item) => item.players,
-        ),
-    )
-})
+let gamesOverTimeChart: Chart | null = null
+let scoreDistChart: Chart | null = null
+let gamesPerPlayerChart: Chart | null = null
 
 function formatNumber(value: number) {
     return value.toLocaleString("en-GB")
@@ -60,12 +32,152 @@ function formatPercent(value: number) {
     return `${value.toFixed(1)}%`
 }
 
+/*
+ * Reads the real design-token values at runtime instead of
+ * hardcoding hex duplicates here, Chart.js draws to canvas,
+ * which can't reference CSS custom properties directly the
+ * way the rest of the app's CSS does, so this stays in sync with App.
+ */
+function cssVar(name: string, fallback: string) {
+    const value = getComputedStyle(document.documentElement)
+        .getPropertyValue(name)
+        .trim()
+
+    return value || fallback
+}
+
+function destroyCharts() {
+    gamesOverTimeChart?.destroy()
+    scoreDistChart?.destroy()
+    gamesPerPlayerChart?.destroy()
+
+    gamesOverTimeChart = null
+    scoreDistChart = null
+    gamesPerPlayerChart = null
+}
+
+function baseChartOptions(textFaint: string, line: string) {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
+                bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
+            },
+        },
+        scales: {
+            x: {
+                ticks: {
+                    color: textFaint,
+                    font: { family: "'JetBrains Mono', monospace", size: 9 },
+                    autoSkip: true,
+                    maxRotation: 0,
+                },
+                grid: { color: line, drawTicks: false },
+            },
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    color: textFaint,
+                    font: { family: "'JetBrains Mono', monospace", size: 9 },
+                    precision: 0,
+                },
+                grid: { color: line, drawTicks: false },
+            },
+        },
+    }
+}
+
+async function renderCharts() {
+    if (!analytics.value) {
+        return
+    }
+
+    // Canvas refs only exist once the v-else-if="analytics"
+    // branch has actually rendered, wait a tick so they're
+    // attached before Chart.js tries to draw into them?
+    await nextTick()
+
+    destroyCharts()
+
+    const volt = cssVar("--volt", "#92c13b")
+    const cyan = cssVar("--cyan", "#5bc0c9")
+    const textFaint = cssVar("--text-faint", "#54566b")
+    const line = cssVar("--line", "rgba(255,255,255,0.08)")
+
+    const options = baseChartOptions(textFaint, line)
+
+    if (gamesOverTimeCanvas.value) {
+        gamesOverTimeChart = new Chart(gamesOverTimeCanvas.value, {
+            type: "bar",
+            data: {
+                labels: analytics.value.activity.games_over_time.map(
+                    (item) => item.period,
+                ),
+                datasets: [{
+                    data: analytics.value.activity.games_over_time.map(
+                        (item) => item.games,
+                    ),
+                    backgroundColor: volt,
+                    borderRadius: 3,
+                    maxBarThickness: 22,
+                }],
+            },
+            options,
+        })
+    }
+
+    if (scoreDistCanvas.value) {
+        scoreDistChart = new Chart(scoreDistCanvas.value, {
+            type: "bar",
+            data: {
+                labels: analytics.value.distributions.scores.map(
+                    (bucket) => bucket.label,
+                ),
+                datasets: [{
+                    data: analytics.value.distributions.scores.map(
+                        (bucket) => bucket.games,
+                    ),
+                    backgroundColor: cyan,
+                    borderRadius: 3,
+                    maxBarThickness: 36,
+                }],
+            },
+            options,
+        })
+    }
+
+    if (gamesPerPlayerCanvas.value) {
+        gamesPerPlayerChart = new Chart(gamesPerPlayerCanvas.value, {
+            type: "bar",
+            data: {
+                labels: analytics.value.distributions.games_per_player.map(
+                    (item) => `${item.games}`,
+                ),
+                datasets: [{
+                    data: analytics.value.distributions.games_per_player.map(
+                        (item) => item.players,
+                    ),
+                    backgroundColor: volt,
+                    borderRadius: 3,
+                    maxBarThickness: 36,
+                }],
+            },
+            options,
+        })
+    }
+}
+
 async function loadAnalytics() {
     loading.value = true
     error.value = ""
 
     try {
         analytics.value = await getAdminAnalytics()
+
+        await renderCharts()
     } catch (err) {
         if (handleAdminError?.(err)) {
             return
@@ -80,6 +192,8 @@ async function loadAnalytics() {
 }
 
 onMounted(loadAnalytics)
+
+onBeforeUnmount(destroyCharts)
 </script>
 
 <template>
@@ -87,13 +201,8 @@ onMounted(loadAnalytics)
 
         <div class="dashboard-heading">
             <div>
-                <p class="dashboard-kicker">
-                    Performance overview
-                </p>
-
-                <h2>
-                    Dashboard
-                </h2>
+                <p class="dashboard-kicker">Performance overview</p>
+                <h2>Dashboard</h2>
             </div>
 
             <button class="refresh-button" type="button" :disabled="loading" @click="loadAnalytics">
@@ -101,66 +210,41 @@ onMounted(loadAnalytics)
             </button>
         </div>
 
-
         <div v-if="loading && !analytics" class="dashboard-state" aria-live="polite">
             Loading analytics...
         </div>
-
 
         <div v-else-if="error && !analytics" class="dashboard-state dashboard-error" role="alert">
             {{ error }}
         </div>
 
-
         <template v-else-if="analytics">
 
-            <!--
-                PRIMARY OBJECTIVE, the business metrics.
-            -->
+            <!-- PRIMARY OBJECTIVE — the 3 numbers that actually matter for a lead-gen event game -->
 
             <div class="kpi-primary">
-
                 <article class="kpi-hero kpi-hero--volt">
                     <span>Leaderboard conversion</span>
-
-                    <strong>
-                        {{ formatPercent(analytics.leaderboard.conversion_rate) }}
-                    </strong>
-
-                    <small>
-                        {{ analytics.leaderboard.unique_entries }} contacts captured
-                    </small>
+                    <strong>{{ formatPercent(analytics.leaderboard.conversion_rate) }}</strong>
+                    <small>{{ analytics.leaderboard.unique_entries }} contacts captured</small>
                 </article>
 
                 <article class="kpi-hero">
                     <span>Unique players</span>
-
-                    <strong>
-                        {{ formatNumber(analytics.players.unique_players) }}
-                    </strong>
-
+                    <strong>{{ formatNumber(analytics.players.unique_players) }}</strong>
                     <small>reach</small>
                 </article>
 
                 <article class="kpi-hero">
                     <span>Games played</span>
-
-                    <strong>
-                        {{ formatNumber(analytics.players.total_games) }}
-                    </strong>
-
+                    <strong>{{ formatNumber(analytics.players.total_games) }}</strong>
                     <small>booth volume</small>
                 </article>
-
             </div>
 
-
-            <!--
-                SECONDARY OBJECTIVE, engagement depth.
-            -->
+            <!-- SECONDARY OBJECTIVE — supporting detail -->
 
             <div class="kpi-secondary">
-
                 <div class="kpi-chip">
                     <span>Replay rate</span>
                     <strong>{{ formatPercent(analytics.players.replay_rate) }}</strong>
@@ -186,8 +270,9 @@ onMounted(loadAnalytics)
                     <span>Avg lightning</span>
                     <strong>{{ analytics.gameplay.average_lightning.toFixed(1) }}</strong>
                 </div>
-
             </div>
+
+            <!-- 2x2 GRID — uniform height regardless of how many data points exist -->
 
             <div class="analytics-grid">
 
@@ -201,21 +286,42 @@ onMounted(loadAnalytics)
                         No activity data yet.
                     </div>
 
-                    <div v-else class="bar-chart">
-                        <div v-for="item in analytics.activity.games_over_time" :key="item.period" class="bar-row">
-                            <span class="bar-label">{{ item.period }}</span>
-
-                            <div class="bar-track" aria-hidden="true">
-                                <div class="bar-fill" :style="{
-                                    width: `${(item.games / maxGamesOverTime) * 100}%`,
-                                }" />
-                            </div>
-
-                            <strong>{{ item.games }}</strong>
-                        </div>
+                    <div v-else class="chart-wrapper">
+                        <canvas ref="gamesOverTimeCanvas" role="img"
+                            :aria-label="`Games over time, bar chart with ${analytics.activity.games_over_time.length} time periods. See the table below for exact values.`" />
                     </div>
+
+                    <!--
+                        TODO: Canvas has no inherent text content for
+                        screen readers — this table carries the
+                        same data, visually hidden but present
+                        in the DOM, so switching from DOM bars
+                        to Chart.js isn't an accessibility
+                        regression, very important.
+                    -->
+                    <table v-if="analytics.activity.games_over_time.length > 0" class="sr-only">
+                        <caption>Games over time</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Period</th>
+                                <th scope="col">Games</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in analytics.activity.games_over_time" :key="item.period">
+                                <td>{{ item.period }}</td>
+                                <td>{{ item.games }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </article>
 
+                <!--
+                    Deliberately NOT a chart, which doesn't compress 
+                    into a single bar axis the way the other 3 panels do. 
+                    Kept as a list, height-matched to the chart panels
+                    via internal scroll instead.
+                -->
                 <article class="analytics-panel">
                     <div class="panel-heading">
                         <span>Companies</span>
@@ -243,46 +349,58 @@ onMounted(loadAnalytics)
 
                 <article class="analytics-panel">
                     <div class="panel-heading">
-                        <span>Engagement</span>
-                        <h3>Games per player</h3>
-                    </div>
-
-                    <div class="bar-chart">
-                        <div v-for="item in analytics.distributions.games_per_player" :key="item.games" class="bar-row">
-                            <span class="bar-label">
-                                {{ item.games }} {{ item.games === 1 ? "game" : "games" }}
-                            </span>
-
-                            <div class="bar-track" aria-hidden="true">
-                                <div class="bar-fill" :style="{
-                                    width: `${(item.players / maxReplayPlayers) * 100}%`,
-                                }" />
-                            </div>
-
-                            <strong>{{ item.players }}</strong>
-                        </div>
-                    </div>
-                </article>
-
-                <article class="analytics-panel">
-                    <div class="panel-heading">
                         <span>Scores</span>
                         <h3>Score distribution</h3>
                     </div>
 
-                    <div class="bar-chart">
-                        <div v-for="bucket in analytics.distributions.scores" :key="bucket.label" class="bar-row">
-                            <span class="bar-label">{{ bucket.label }}</span>
-
-                            <div class="bar-track" aria-hidden="true">
-                                <div class="bar-fill" :style="{
-                                    width: `${(bucket.games / maxScoreBucket) * 100}%`,
-                                }" />
-                            </div>
-
-                            <strong>{{ bucket.games }}</strong>
-                        </div>
+                    <div class="chart-wrapper">
+                        <canvas ref="scoreDistCanvas" role="img"
+                            aria-label="Score distribution, bar chart. See the table below for exact values." />
                     </div>
+
+                    <table class="sr-only">
+                        <caption>Score distribution</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Range</th>
+                                <th scope="col">Games</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="bucket in analytics.distributions.scores" :key="bucket.label">
+                                <td>{{ bucket.label }}</td>
+                                <td>{{ bucket.games }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </article>
+
+                <article class="analytics-panel">
+                    <div class="panel-heading">
+                        <span>Engagement</span>
+                        <h3>Games per player</h3>
+                    </div>
+
+                    <div class="chart-wrapper">
+                        <canvas ref="gamesPerPlayerCanvas" role="img"
+                            aria-label="Games per player, bar chart. See the table below for exact values." />
+                    </div>
+
+                    <table class="sr-only">
+                        <caption>Games per player</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Games</th>
+                                <th scope="col">Players</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in analytics.distributions.games_per_player" :key="item.games">
+                                <td>{{ item.games }}</td>
+                                <td>{{ item.players }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </article>
 
             </div>
@@ -359,7 +477,7 @@ onMounted(loadAnalytics)
 
 
 /* =========================
-   PRIMARY KPIs — the "3 hero numbers"
+   PRIMARY KPIs
 ========================= */
 
 .kpi-primary {
@@ -385,7 +503,6 @@ onMounted(loadAnalytics)
 
 .kpi-hero--volt {
     border-color: var(--volt-dim);
-
     background: linear-gradient(155deg, rgba(var(--volt-rgb), 0.14), rgba(var(--cyan-rgb), 0.06));
 }
 
@@ -420,7 +537,7 @@ onMounted(loadAnalytics)
 
 
 /* =========================
-   SECONDARY KPIs — quieter, smaller, supporting detail
+   SECONDARY KPIs
 ========================= */
 
 .kpi-secondary {
@@ -472,17 +589,22 @@ onMounted(loadAnalytics)
 
 
 /* =========================
-   CHARTS
+   2x2 GRID — fixed, uniform
+   panel height regardless of
+   data point count
 ========================= */
 
 .analytics-grid {
     display: grid;
 
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 300px;
     gap: 14px;
 }
 
 .analytics-panel {
+    display: flex;
+    flex-direction: column;
     min-width: 0;
 
     padding: 18px;
@@ -494,7 +616,9 @@ onMounted(loadAnalytics)
 }
 
 .panel-heading {
-    margin-bottom: 18px;
+    flex: 0 0 auto;
+
+    margin-bottom: 14px;
 }
 
 .panel-heading span {
@@ -516,61 +640,18 @@ onMounted(loadAnalytics)
     font-size: 1rem;
 }
 
-.bar-chart {
-    display: grid;
-    gap: 11px;
-}
+.chart-wrapper {
+    position: relative;
 
-.bar-row {
-    display: grid;
-
-    grid-template-columns: minmax(90px, 0.9fr) minmax(100px, 2fr) 36px;
-    gap: 10px;
-
-    align-items: center;
-}
-
-.bar-label {
-    overflow: hidden;
-
-    color: var(--text-faint);
-
-    font-family: var(--font-mono);
-    font-size: 0.58rem;
-
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.bar-track {
-    height: 7px;
-
-    overflow: hidden;
-
-    border-radius: 999px;
-
-    background: rgba(255, 255, 255, 0.06);
-}
-
-.bar-fill {
-    height: 100%;
-    min-width: 2px;
-
-    border-radius: inherit;
-
-    background: linear-gradient(90deg, var(--volt), var(--cyan));
-}
-
-.bar-row>strong {
-    color: var(--text);
-
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    text-align: right;
+    flex: 1;
+    min-height: 0;
 }
 
 .company-list {
-    display: grid;
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto;
 }
 
 .company-row {
@@ -634,6 +715,30 @@ onMounted(loadAnalytics)
 
 
 /* =========================
+   VISUALLY HIDDEN — screen-
+   reader-only data tables,
+   the text fallback for the
+   canvas charts above
+========================= */
+
+.sr-only {
+    position: absolute;
+
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+
+    overflow: hidden;
+
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+
+    border: 0;
+}
+
+
+/* =========================
    STATES
 ========================= */
 
@@ -672,17 +777,13 @@ onMounted(loadAnalytics)
 
     .analytics-grid {
         grid-template-columns: 1fr;
+        grid-auto-rows: 260px;
     }
 }
 
 @media (max-width: 480px) {
     .kpi-secondary {
         grid-template-columns: 1fr;
-    }
-
-    .bar-row {
-        grid-template-columns: minmax(72px, 0.8fr) minmax(80px, 1.8fr) 30px;
-        gap: 7px;
     }
 }
 </style>
