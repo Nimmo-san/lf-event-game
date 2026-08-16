@@ -218,27 +218,6 @@ onMounted(loadAnalytics)
 
                 <article class="analytics-panel">
                     <div class="panel-heading">
-                        <span>Scores</span>
-                        <h3>Score distribution</h3>
-                    </div>
-
-                    <div class="bar-chart">
-                        <div v-for="bucket in analytics.distributions.scores" :key="bucket.label" class="bar-row">
-                            <span class="bar-label">{{ bucket.label }}</span>
-
-                            <div class="bar-track" aria-hidden="true">
-                                <div class="bar-fill" :style="{
-                                    width: `${(bucket.games / maxScoreBucket) * 100}%`,
-                                }" />
-                            </div>
-
-                            <strong>{{ bucket.games }}</strong>
-                        </div>
-                    </div>
-                </article>
-
-                <article class="analytics-panel">
-                    <div class="panel-heading">
                         <span>Engagement</span>
                         <h3>Games per player</h3>
                     </div>
@@ -281,6 +260,27 @@ onMounted(loadAnalytics)
                                 <strong>{{ company.best_score.toLocaleString() }}</strong>
                                 <span>best</span>
                             </div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="analytics-panel">
+                    <div class="panel-heading">
+                        <span>Scores</span>
+                        <h3>Score distribution</h3>
+                    </div>
+
+                    <div class="bar-chart">
+                        <div v-for="bucket in analytics.distributions.scores" :key="bucket.label" class="bar-row">
+                            <span class="bar-label">{{ bucket.label }}</span>
+
+                            <div class="bar-track" aria-hidden="true">
+                                <div class="bar-fill" :style="{
+                                    width: `${(bucket.games / maxScoreBucket) * 100}%`,
+                                }" />
+                            </div>
+
+                            <strong>{{ bucket.games }}</strong>
                         </div>
                     </div>
                 </article>
