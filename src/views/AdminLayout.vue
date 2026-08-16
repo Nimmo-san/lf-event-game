@@ -146,17 +146,17 @@ onMounted(checkSession)
                 </h1>
 
                 <div class="sidebar-links">
-                    <router-link to="/admin/dashboard" class="nav-link" :title="!sidebarOpen ? 'Dashboard' : undefined"
+                    <RouterLink to="/admin/dashboard" class="nav-link" :title="!sidebarOpen ? 'Dashboard' : undefined"
                         @click="closeSidebarOnMobileNav">
                         <span aria-hidden="true">📊</span>
                         <span v-if="sidebarOpen" class="nav-label">Dashboard</span>
-                    </router-link>
+                    </RouterLink>
 
-                    <router-link to="/admin/export" class="nav-link" :title="!sidebarOpen ? 'Export data' : undefined"
+                    <RouterLink to="/admin/export" class="nav-link" :title="!sidebarOpen ? 'Export data' : undefined"
                         @click="closeSidebarOnMobileNav">
                         <span aria-hidden="true">📤</span>
                         <span v-if="sidebarOpen" class="nav-label">Export data</span>
-                    </router-link>
+                    </RouterLink>
                 </div>
 
                 <button class="logout-button" type="button" :title="!sidebarOpen ? 'Logout' : undefined"
@@ -168,7 +168,7 @@ onMounted(checkSession)
             </nav>
 
             <div class="admin-content">
-                <router-view />
+                <RouterView />
             </div>
 
         </div>
