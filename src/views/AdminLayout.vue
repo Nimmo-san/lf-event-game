@@ -8,6 +8,10 @@ import {
     checkAdminSession,
 } from "../services/adminApi"
 
+import DashboardIcon from "../components/DashboardIcon.vue"
+import DashboardExport from "../components/DashboardExport.vue"
+import DashboardLogout from "../components/DashboardLogout.vue"
+
 const authenticated = ref<boolean | null>(null)
 
 const adminKey = ref("")
@@ -148,20 +152,26 @@ onMounted(checkSession)
                 <div class="sidebar-links">
                     <RouterLink to="/admin/dashboard" class="nav-link" :title="!sidebarOpen ? 'Dashboard' : undefined"
                         @click="closeSidebarOnMobileNav">
-                        <span aria-hidden="true">📊</span>
+                        <span aria-hidden="true">
+                            <DashboardIcon/>
+                        </span>
                         <span v-if="sidebarOpen" class="nav-label">Dashboard</span>
                     </RouterLink>
 
                     <RouterLink to="/admin/export" class="nav-link" :title="!sidebarOpen ? 'Export data' : undefined"
                         @click="closeSidebarOnMobileNav">
-                        <span aria-hidden="true">📤</span>
+                        <span aria-hidden="true">
+                            <DashboardExport/>
+                        </span>
                         <span v-if="sidebarOpen" class="nav-label">Export data</span>
                     </RouterLink>
                 </div>
 
                 <button class="logout-button" type="button" :title="!sidebarOpen ? 'Logout' : undefined"
                     @click="logout">
-                    <span aria-hidden="true">🚪</span>
+                    <span aria-hidden="true">
+                        <DashboardLogout/>
+                    </span>
                     <span v-if="sidebarOpen" class="nav-label">Logout</span>
                 </button>
 
