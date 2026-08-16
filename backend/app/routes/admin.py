@@ -444,3 +444,113 @@ def export_marketing_data(
             "Cache-Control": "no-store",
         },
     )
+
+
+@router.get("/analytics")
+@limiter.limit("30/minute")
+def get_admin_analytics(
+    request: Request,
+    db: Session = Depends(get_db),
+    _: AdminSession = Depends(require_admin),
+):
+    total_games = db.query(func.count(GameResult.id)).scalar() or 0
+
+    unique_players = (
+        db.query(func.count(func.distinct(GameResult.player_id))).scalar() or 0
+    )
+
+    repeat_players = (
+        db.query(GameResult.player_id)
+        .group_by(GameResult.player_id)
+        .having(func.count(GameResult.id) > 1)
+        .count()
+    )
+
+    average_score = db.query(func.avg(GameResult.score)).scalar() or 0
+
+    highest_score = db.query(func.max(GameResult.score)).scalar() or 0
+
+    average_lightning = db.query(func.avg(GameResult.lightning_collected)).scalar() or 0
+
+    average_duration = db.query(func.avg(GameResult.duration)).scalar() or 0
+
+    # Unique leaderboard contacts.
+    # Email is used here because the admin marketing
+    # view is also deduplicated by email.
+    unique_leaderboard_entries = (
+        db.query(func.count(func.distinct(func.lower(LeaderboardEntry.email)))).scalar()
+        or 0
+    )
+
+    average_games_per_player = total_games / unique_players if unique_players else 0
+
+    replay_rate = repeat_players / unique_players * 100 if unique_players else 0
+
+    leaderboard_conversion_rate = (
+        unique_leaderboard_entries / unique_players * 100 if unique_players else 0
+    )
+
+    company_rows = (
+        db.query(
+            GameResult.company_name.label("company"),
+            func.count(func.distinct(GameResult.player_id)).label("players"),
+            func.count(GameResult.id).label("games"),
+            func.max(GameResult.score).label("best_score"),
+            func.avg(GameResult.score).label("average_score"),
+        )
+        .group_by(GameResult.company_name)
+        .order_by(func.count(func.distinct(GameResult.player_id)).desc())
+        .limit(10)
+        .all()
+    )
+
+    return {
+        "players": {
+            "unique_players": unique_players,
+            "total_games": total_games,
+            "repeat_players": repeat_players,
+            "average_games_per_player": round(
+                average_games_per_player,
+                2,
+            ),
+            "replay_rate": round(
+                replay_rate,
+                2,
+            ),
+        },
+        "gameplay": {
+            "average_score": round(
+                float(average_score),
+                2,
+            ),
+            "highest_score": highest_score,
+            "average_lightning": round(
+                float(average_lightning),
+                2,
+            ),
+            "average_duration": round(
+                float(average_duration),
+                2,
+            ),
+        },
+        "leaderboard": {
+            "unique_entries": unique_leaderboard_entries,
+            "conversion_rate": round(
+                leaderboard_conversion_rate,
+                2,
+            ),
+        },
+        "companies": [
+            {
+                "company": row.company,
+                "players": row.players,
+                "games": row.games,
+                "best_score": row.best_score,
+                "average_score": round(
+                    float(row.average_score or 0),
+                    2,
+                ),
+            }
+            for row in company_rows
+        ],
+    }
