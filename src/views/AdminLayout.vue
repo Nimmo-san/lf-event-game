@@ -125,9 +125,7 @@ onMounted(checkSession)
 
             <button type="button" class="mobile-toggle" :aria-expanded="sidebarOpen" aria-label="Toggle navigation"
                 @click="toggleSidebar">
-                <span aria-hidden="true">
-                    <DashboardIconMenu/>
-                </span>
+                <DashboardIconMenu/>
                 Menu
             </button>
 
@@ -144,9 +142,7 @@ onMounted(checkSession)
 
                     <button type="button" class="sidebar-toggle" :aria-expanded="sidebarOpen"
                         aria-label="Toggle navigation" @click="toggleSidebar">
-                        <span aria-hidden="true">
-                            <DashboardIconMenu/>
-                        </span>
+                        <DashboardIconMenu/>
                     </button>
                 </div>
 
@@ -156,27 +152,21 @@ onMounted(checkSession)
 
                 <div class="sidebar-links">
                     <RouterLink to="/admin/dashboard" class="nav-link" :title="!sidebarOpen ? 'Dashboard' : undefined"
-                        @click="closeSidebarOnMobileNav">
-                        <span aria-hidden="true">
-                            <DashboardIcon/>
-                        </span>
+                        @click="closeSidebarOnMobileNav">                
+                        <DashboardIcon/>
                         <span v-if="sidebarOpen" class="nav-label">Dashboard</span>
                     </RouterLink>
 
                     <RouterLink to="/admin/export" class="nav-link" :title="!sidebarOpen ? 'Export data' : undefined"
                         @click="closeSidebarOnMobileNav">
-                        <span aria-hidden="true">
-                            <DashboardExport/>
-                        </span>
+                        <DashboardExport/>
                         <span v-if="sidebarOpen" class="nav-label">Export data</span>
                     </RouterLink>
                 </div>
 
                 <button class="logout-button" type="button" :title="!sidebarOpen ? 'Logout' : undefined"
                     @click="logout">
-                    <span aria-hidden="true">
-                        <DashboardLogout/>
-                    </span>
+                    <DashboardLogout/>
                     <span v-if="sidebarOpen" class="nav-label">Logout</span>
                 </button>
 
