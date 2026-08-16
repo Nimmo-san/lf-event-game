@@ -218,29 +218,6 @@ onMounted(loadAnalytics)
 
                 <article class="analytics-panel">
                     <div class="panel-heading">
-                        <span>Engagement</span>
-                        <h3>Games per player</h3>
-                    </div>
-
-                    <div class="bar-chart">
-                        <div v-for="item in analytics.distributions.games_per_player" :key="item.games" class="bar-row">
-                            <span class="bar-label">
-                                {{ item.games }} {{ item.games === 1 ? "game" : "games" }}
-                            </span>
-
-                            <div class="bar-track" aria-hidden="true">
-                                <div class="bar-fill" :style="{
-                                    width: `${(item.players / maxReplayPlayers) * 100}%`,
-                                }" />
-                            </div>
-
-                            <strong>{{ item.players }}</strong>
-                        </div>
-                    </div>
-                </article>
-
-                <article class="analytics-panel">
-                    <div class="panel-heading">
                         <span>Companies</span>
                         <h3>Top companies</h3>
                     </div>
@@ -260,6 +237,29 @@ onMounted(loadAnalytics)
                                 <strong>{{ company.best_score.toLocaleString() }}</strong>
                                 <span>best</span>
                             </div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="analytics-panel">
+                    <div class="panel-heading">
+                        <span>Engagement</span>
+                        <h3>Games per player</h3>
+                    </div>
+
+                    <div class="bar-chart">
+                        <div v-for="item in analytics.distributions.games_per_player" :key="item.games" class="bar-row">
+                            <span class="bar-label">
+                                {{ item.games }} {{ item.games === 1 ? "game" : "games" }}
+                            </span>
+
+                            <div class="bar-track" aria-hidden="true">
+                                <div class="bar-fill" :style="{
+                                    width: `${(item.players / maxReplayPlayers) * 100}%`,
+                                }" />
+                            </div>
+
+                            <strong>{{ item.players }}</strong>
                         </div>
                     </div>
                 </article>
