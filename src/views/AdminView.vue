@@ -15,6 +15,57 @@ interface AdminEntry {
     entered_at: string;
 }
 
+interface AnalyticsResponse {
+    players: {
+        unique_players: number;
+        total_games: number;
+        repeat_players: number;
+        average_games_per_player: number;
+        replay_rate: number;
+    };
+
+    gameplay: {
+        average_score: number;
+        highest_score: number;
+        average_lightning: number;
+        average_duration: number;
+    };
+
+    leaderboard: {
+        unique_entries: number;
+        conversion_rate: number;
+    };
+
+    activity: {
+        games_over_time: Array<{
+            period: string;
+            games: number;
+        }>;
+    };
+
+    distributions: {
+        scores: Array<{
+            label: string;
+            minimum: number;
+            maximum: number;
+            games: number;
+        }>;
+
+        games_per_player: Array<{
+            games: number;
+            players: number;
+        }>;
+    };
+
+    companies: Array<{
+        company: string;
+        players: number;
+        games: number;
+        best_score: number;
+        average_score: number;
+    }>;
+}
+
 const authenticated = ref(false);
 
 const adminKey = ref("");
@@ -31,6 +82,17 @@ const search = ref("");
 const name = ref("");
 const email = ref("");
 const company = ref("");
+
+const analytics =
+    ref<AnalyticsResponse | null>(
+        null,
+    );
+
+const analyticsLoading =
+    ref(false);
+
+const analyticsError =
+    ref("");
 
 const excludedIds = ref<Set<string>>(
     new Set(),
@@ -67,6 +129,66 @@ const excludedVisibleCount =
                 ),
         ).length;
     });
+
+const maxGamesOverTime =
+    computed(() => {
+        if (!analytics.value) {
+            return 1;
+        }
+
+        return Math.max(
+            1,
+            ...analytics.value.activity.games_over_time.map(
+                item => item.games,
+            ),
+        );
+    });
+
+
+const maxScoreBucket =
+    computed(() => {
+        if (!analytics.value) {
+            return 1;
+        }
+
+        return Math.max(
+            1,
+            ...analytics.value.distributions.scores.map(
+                item => item.games,
+            ),
+        );
+    });
+
+
+const maxReplayPlayers =
+    computed(() => {
+        if (!analytics.value) {
+            return 1;
+        }
+
+        return Math.max(
+            1,
+            ...analytics.value.distributions.games_per_player.map(
+                item => item.players,
+            ),
+        );
+    });
+
+
+function formatNumber(
+    value: number,
+) {
+    return value.toLocaleString(
+        "en-GB",
+    );
+}
+
+
+function formatPercent(
+    value: number,
+) {
+    return `${value.toFixed(1)}%`;
+}
 
 function toggleExcluded(
     id: string,
@@ -138,6 +260,7 @@ async function checkSession() {
         authenticated.value = true;
 
         await loadEntries();
+        await loadAnalytics();
     } catch {
         authenticated.value = false;
     }
@@ -386,6 +509,54 @@ async function logout() {
     }
 }
 
+async function loadAnalytics() {
+    analyticsLoading.value = true;
+    analyticsError.value = "";
+
+    try {
+        const response =
+            await fetch(
+                `${API_URL}/admin/analytics`,
+                {
+                    credentials:
+                        "include",
+                },
+            );
+
+        if (response.status === 401) {
+            authenticated.value =
+                false;
+
+            analytics.value =
+                null;
+
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(
+                "Unable to load analytics.",
+            );
+        }
+
+        analytics.value =
+            await response.json();
+
+    } catch (err) {
+        console.error(
+            "Failed to load analytics:",
+            err,
+        );
+
+        analyticsError.value =
+            "Unable to load analytics.";
+
+    } finally {
+        analyticsLoading.value =
+            false;
+    }
+}
+
 function clearFilters() {
     search.value = "";
     name.value = "";
@@ -454,6 +625,387 @@ onMounted(() => {
 
         <section v-else class="admin-dashboard">
             <header class="admin-header">
+                <section class="analytics-section">
+
+                    <div class="analytics-heading">
+
+                        <div>
+                            <span class="analytics-kicker">
+                                EVENT ANALYTICS
+                            </span>
+
+                            <h2>
+                                Performance overview
+                            </h2>
+                        </div>
+
+                        <button class="secondary-button" type="button" :disabled="analyticsLoading"
+                            @click="loadAnalytics">
+                            {{
+                                analyticsLoading
+                                    ? "Refreshing..."
+                                    : "Refresh"
+                            }}
+                        </button>
+
+                    </div>
+
+
+                    <div v-if="analyticsLoading && !analytics" class="analytics-state">
+                        Loading analytics...
+                    </div>
+
+
+                    <div v-else-if="analyticsError && !analytics" class="analytics-state analytics-error">
+                        {{ analyticsError }}
+                    </div>
+
+
+                    <template v-else-if="analytics">
+
+                        <div class="analytics-kpis">
+
+                            <article class="analytics-card">
+                                <span>
+                                    UNIQUE PLAYERS
+                                </span>
+
+                                <strong>
+                                    {{
+                                        formatNumber(
+                                            analytics.players.unique_players
+                                        )
+                                    }}
+                                </strong>
+                            </article>
+
+
+                            <article class="analytics-card">
+                                <span>
+                                    GAMES PLAYED
+                                </span>
+
+                                <strong>
+                                    {{
+                                        formatNumber(
+                                            analytics.players.total_games
+                                        )
+                                    }}
+                                </strong>
+                            </article>
+
+
+                            <article class="analytics-card">
+                                <span>
+                                    REPLAY RATE
+                                </span>
+
+                                <strong>
+                                    {{
+                                        formatPercent(
+                                            analytics.players.replay_rate
+                                        )
+                                    }}
+                                </strong>
+
+                                <small>
+                                    {{
+                                        analytics.players.repeat_players
+                                    }}
+                                    repeat players
+                                </small>
+                            </article>
+
+
+                            <article class="analytics-card">
+                                <span>
+                                    LEADERBOARD CONVERSION
+                                </span>
+
+                                <strong>
+                                    {{
+                                        formatPercent(
+                                            analytics.leaderboard.conversion_rate
+                                        )
+                                    }}
+                                </strong>
+
+                                <small>
+                                    {{
+                                        analytics.leaderboard.unique_entries
+                                    }}
+                                    unique contacts
+                                </small>
+                            </article>
+
+
+                            <article class="analytics-card">
+                                <span>
+                                    HIGHEST SCORE
+                                </span>
+
+                                <strong>
+                                    {{
+                                        formatNumber(
+                                            analytics.gameplay.highest_score
+                                        )
+                                    }}
+                                </strong>
+                            </article>
+
+
+                            <article class="analytics-card">
+                                <span>
+                                    AVG SCORE
+                                </span>
+
+                                <strong>
+                                    {{
+                                        Math.round(
+                                            analytics.gameplay.average_score
+                                        ).toLocaleString()
+                                    }}
+                                </strong>
+                            </article>
+
+
+                            <article class="analytics-card">
+                                <span>
+                                    AVG LIGHTNING
+                                </span>
+
+                                <strong>
+                                    {{
+                                        analytics.gameplay.average_lightning
+                                            .toFixed(1)
+                                    }}
+                                </strong>
+                            </article>
+
+
+                            <article class="analytics-card">
+                                <span>
+                                    AVG GAME TIME
+                                </span>
+
+                                <strong>
+                                    {{
+                                        analytics.gameplay.average_duration
+                                            .toFixed(1)
+                                    }}s
+                                </strong>
+                            </article>
+
+                        </div>
+
+
+                        <div class="analytics-grid">
+
+                            <!-- GAMES OVER TIME -->
+
+                            <article class="analytics-panel">
+
+                                <div class="panel-heading">
+                                    <div>
+                                        <span>
+                                            ACTIVITY
+                                        </span>
+
+                                        <h3>
+                                            Games over time
+                                        </h3>
+                                    </div>
+                                </div>
+
+
+                                <div v-if="
+                                    analytics.activity.games_over_time.length === 0
+                                " class="panel-empty">
+                                    No activity data yet.
+                                </div>
+
+
+                                <div v-else class="bar-chart">
+                                    <div v-for="item in analytics.activity.games_over_time" :key="item.period"
+                                        class="bar-row">
+                                        <span class="bar-label">
+                                            {{ item.period }}
+                                        </span>
+
+                                        <div class="bar-track">
+                                            <div class="bar-fill" :style="{
+                                                width:
+                                                    `${(
+                                                        item.games /
+                                                        maxGamesOverTime
+                                                    ) * 100
+                                                    }%`,
+                                            }" />
+                                        </div>
+
+                                        <strong>
+                                            {{ item.games }}
+                                        </strong>
+                                    </div>
+                                </div>
+
+                            </article>
+
+
+                            <!-- SCORE DISTRIBUTION -->
+
+                            <article class="analytics-panel">
+
+                                <div class="panel-heading">
+                                    <div>
+                                        <span>
+                                            SCORES
+                                        </span>
+
+                                        <h3>
+                                            Score distribution
+                                        </h3>
+                                    </div>
+                                </div>
+
+
+                                <div class="bar-chart">
+                                    <div v-for="bucket in analytics.distributions.scores" :key="bucket.label"
+                                        class="bar-row">
+                                        <span class="bar-label">
+                                            {{ bucket.label }}
+                                        </span>
+
+                                        <div class="bar-track">
+                                            <div class="bar-fill" :style="{
+                                                width:
+                                                    `${(
+                                                        bucket.games /
+                                                        maxScoreBucket
+                                                    ) * 100
+                                                    }%`,
+                                            }" />
+                                        </div>
+
+                                        <strong>
+                                            {{ bucket.games }}
+                                        </strong>
+                                    </div>
+                                </div>
+
+                            </article>
+
+
+                            <!-- REPLAY DISTRIBUTION -->
+
+                            <article class="analytics-panel">
+
+                                <div class="panel-heading">
+                                    <div>
+                                        <span>
+                                            ENGAGEMENT
+                                        </span>
+
+                                        <h3>
+                                            Games per player
+                                        </h3>
+                                    </div>
+                                </div>
+
+
+                                <div class="bar-chart">
+                                    <div v-for="item in analytics.distributions.games_per_player" :key="item.games"
+                                        class="bar-row">
+                                        <span class="bar-label">
+                                            {{ item.games }}
+                                            {{
+                                                item.games === 1
+                                                    ? "game"
+                                                    : "games"
+                                            }}
+                                        </span>
+
+                                        <div class="bar-track">
+                                            <div class="bar-fill" :style="{
+                                                width:
+                                                    `${(
+                                                        item.players /
+                                                        maxReplayPlayers
+                                                    ) * 100
+                                                    }%`,
+                                            }" />
+                                        </div>
+
+                                        <strong>
+                                            {{ item.players }}
+                                        </strong>
+                                    </div>
+                                </div>
+
+                            </article>
+
+
+                            <!-- COMPANIES -->
+
+                            <article class="analytics-panel">
+
+                                <div class="panel-heading">
+                                    <div>
+                                        <span>
+                                            COMPANIES
+                                        </span>
+
+                                        <h3>
+                                            Top companies
+                                        </h3>
+                                    </div>
+                                </div>
+
+
+                                <div v-if="analytics.companies.length === 0" class="panel-empty">
+                                    No company data yet.
+                                </div>
+
+
+                                <div v-else class="company-list">
+                                    <div v-for="company in analytics.companies" :key="company.company"
+                                        class="company-row">
+                                        <div>
+                                            <strong>
+                                                {{ company.company }}
+                                            </strong>
+
+                                            <span>
+                                                {{ company.players }}
+                                                players ·
+                                                {{ company.games }}
+                                                games
+                                            </span>
+                                        </div>
+
+
+                                        <div class="company-score">
+                                            <strong>
+                                                {{
+                                                    company.best_score
+                                                        .toLocaleString()
+                                                }}
+                                            </strong>
+
+                                            <span>
+                                                best
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </article>
+
+                        </div>
+
+                    </template>
+
+                </section>
                 <div>
                     <p class="section-kicker">
                         <i class="kicker-bolt">⚡</i>
@@ -832,6 +1384,353 @@ onMounted(() => {
     color: var(--text-dim);
 }
 
+/* =========================
+   ANALYTICS
+========================= */
+
+.analytics-section {
+    margin-bottom: 22px;
+}
+
+
+.analytics-heading {
+    display: flex;
+
+    align-items: flex-end;
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 16px;
+}
+
+
+.analytics-kicker,
+.panel-heading span {
+    color: var(--volt);
+
+    font-family: var(--font-mono);
+    font-size: 0.56rem;
+    font-weight: 700;
+
+    letter-spacing: 0.12em;
+}
+
+
+.analytics-heading h2,
+.panel-heading h3 {
+    margin: 5px 0 0;
+
+    color: var(--text);
+
+    font-family: var(--font-display);
+}
+
+
+.analytics-heading h2 {
+    font-size: 1.45rem;
+}
+
+
+.analytics-kpis {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-bottom: 14px;
+}
+
+
+.analytics-card {
+    display: grid;
+
+    min-width: 0;
+
+    gap: 7px;
+
+    padding: 16px;
+
+    border: 1px solid var(--line);
+    border-radius: 16px;
+
+    background:
+        linear-gradient(155deg,
+            rgba(255, 255, 255, 0.035),
+            rgba(255, 255, 255, 0.015));
+}
+
+
+.analytics-card>span {
+    color: var(--text-faint);
+
+    font-family: var(--font-mono);
+    font-size: 0.54rem;
+    font-weight: 700;
+
+    letter-spacing: 0.1em;
+}
+
+
+.analytics-card>strong {
+    color: var(--text);
+
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem,
+            3vw,
+            2rem);
+
+    letter-spacing: -0.03em;
+}
+
+
+.analytics-card>small {
+    color: var(--text-faint);
+
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+}
+
+
+.analytics-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 14px;
+}
+
+
+.analytics-panel {
+    min-width: 0;
+
+    padding: 18px;
+
+    border: 1px solid var(--line);
+    border-radius: 18px;
+
+    background: var(--surface);
+}
+
+
+.panel-heading {
+    margin-bottom: 18px;
+}
+
+
+.panel-heading h3 {
+    font-size: 1rem;
+}
+
+
+.bar-chart {
+    display: grid;
+    gap: 11px;
+}
+
+
+.bar-row {
+    display: grid;
+
+    grid-template-columns:
+        minmax(90px, 0.9fr) minmax(100px, 2fr) 36px;
+
+    gap: 10px;
+
+    align-items: center;
+}
+
+
+.bar-label {
+    overflow: hidden;
+
+    color: var(--text-faint);
+
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+.bar-track {
+    height: 7px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background:
+        rgba(255, 255, 255, 0.06);
+}
+
+
+.bar-fill {
+    height: 100%;
+
+    min-width: 2px;
+
+    border-radius: inherit;
+
+    background:
+        linear-gradient(90deg,
+            var(--volt),
+            var(--cyan));
+}
+
+
+.bar-row>strong {
+    color: var(--text);
+
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+
+    text-align: right;
+}
+
+
+.company-list {
+    display: grid;
+}
+
+
+.company-row {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 18px;
+
+    padding: 11px 0;
+
+    border-bottom:
+        1px solid var(--line);
+}
+
+
+.company-row:last-child {
+    border-bottom: 0;
+}
+
+
+.company-row>div:first-child {
+    display: grid;
+    gap: 4px;
+
+    min-width: 0;
+}
+
+
+.company-row strong {
+    overflow: hidden;
+
+    color: var(--text);
+
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+.company-row span {
+    color: var(--text-faint);
+
+    font-family: var(--font-mono);
+    font-size: 0.57rem;
+}
+
+
+.company-score {
+    display: grid;
+
+    flex: 0 0 auto;
+
+    justify-items: end;
+
+    gap: 2px;
+}
+
+
+.company-score strong {
+    color: var(--volt);
+
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+}
+
+
+.analytics-state,
+.panel-empty {
+    display: grid;
+
+    min-height: 120px;
+
+    place-content: center;
+
+    color: var(--text-faint);
+
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+
+    text-align: center;
+}
+
+
+.analytics-error {
+    color: var(--coral);
+}
+
+
+@media (max-width: 900px) {
+
+    .analytics-kpis {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+
+@media (max-width: 520px) {
+
+    .analytics-heading {
+        align-items: center;
+    }
+
+
+    .analytics-kpis {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 8px;
+    }
+
+
+    .analytics-card {
+        padding: 13px;
+    }
+
+
+    .bar-row {
+        grid-template-columns:
+            minmax(72px, 0.8fr) minmax(80px, 1.8fr) 30px;
+
+        gap: 7px;
+    }
+
+}
 
 /* =========================
    FILTERS
