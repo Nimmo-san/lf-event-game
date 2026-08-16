@@ -11,6 +11,7 @@ import {
 import DashboardIcon from "../components/DashboardIcon.vue"
 import DashboardExport from "../components/DashboardExport.vue"
 import DashboardLogout from "../components/DashboardLogout.vue"
+import DashboardIconMenu from "../components/DashboardIconMenu.vue"
 
 const authenticated = ref<boolean | null>(null)
 
@@ -124,7 +125,9 @@ onMounted(checkSession)
 
             <button type="button" class="mobile-toggle" :aria-expanded="sidebarOpen" aria-label="Toggle navigation"
                 @click="toggleSidebar">
-                <span aria-hidden="true">☰</span>
+                <span aria-hidden="true">
+                    <DashboardIconMenu/>
+                </span>
                 Menu
             </button>
 
