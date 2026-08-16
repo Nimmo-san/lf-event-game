@@ -504,6 +504,83 @@ def get_admin_analytics(
         .all()
     )
 
+    games_over_time_rows = (
+        db.query(
+            func.strftime(
+                "%Y-%m-%d %H:00",
+                GameResult.created_at,
+            ).label("period"),
+            func.count(GameResult.id).label("games"),
+        )
+        .group_by(
+            "period",
+        )
+        .order_by(
+            "period",
+        )
+        .all()
+    )
+
+    # simple score distribution bucket
+    score_buckets = [
+        (0, 999),
+        (1000, 1999),
+        (2000, 2999),
+        (3000, 3999),
+        (4000, 4999),
+        (5000, 5999),
+        (6000, 999999),
+    ]
+
+    score_distribution = []
+
+    for minimum, maximum in score_buckets:
+        count = (
+            db.query(func.count(GameResult.id))
+            .filter(
+                GameResult.score >= minimum,
+                GameResult.score <= maximum,
+            )
+            .scalar()
+            or 0
+        )
+
+        label = f"{minimum:,}+" if maximum >= 999999 else f"{minimum:,}-{maximum:,}"
+
+        score_distribution.append(
+            {
+                "label": label,
+                "minimum": minimum,
+                "maximum": maximum,
+                "games": count,
+            }
+        )
+
+    games_per_player_subquery = (
+        db.query(
+            GameResult.player_id,
+            func.count(GameResult.id).label("game_count"),
+        )
+        .group_by(
+            GameResult.player_id,
+        )
+        .subquery()
+    )
+
+    games_per_player_rows = (
+        db.query(
+            games_per_player_subquery.c.game_count,
+            func.count().label("players"),
+        )
+        .group_by(
+            games_per_player_subquery.c.game_count,
+        )
+        .order_by(
+            games_per_player_subquery.c.game_count,
+        )
+        .all()
+    )
+
     return {
         "players": {
             "unique_players": unique_players,
@@ -539,6 +616,25 @@ def get_admin_analytics(
                 leaderboard_conversion_rate,
                 2,
             ),
+        },
+        "activity": {
+            "games_over_time": [
+                {
+                    "period": row.period,
+                    "games": row.games,
+                }
+                for row in games_over_time_rows
+            ],
+        },
+        "distributions": {
+            "scores": score_distribution,
+            "games_per_player": [
+                {
+                    "games": row.game_count,
+                    "players": row.players,
+                }
+                for row in games_per_player_rows
+            ],
         },
         "companies": [
             {
