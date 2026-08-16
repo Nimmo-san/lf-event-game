@@ -2,6 +2,9 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import StartScreen from "../components/StartScreen.vue";
 import GameView from "../views/GameView.vue";
+import AdminDashboard from "../views/AdminDashboard.vue";
+import AdminLayout from "../views/AdminLayout.vue";
+import AdminExport from "../views/AdminExport.vue";
 // import LeaderboardView from "../views/LeaderboardView.vue";
 
 import { getPlayerSession } from "../services/playerSession";
@@ -17,9 +20,23 @@ const router = createRouter({
     },
     {
       path: "/admin",
-      name: "admin",
-      component: () =>
-        import ("../views/AdminView.vue")
+      component: AdminLayout,
+      children: [
+        {
+          path: "",
+          redirect: { name: "admin-dashboard" },
+        },
+        {
+          path: "dashboard",
+          name: "admin-dashboard",
+          component: AdminDashboard,
+        },
+        {
+          path: "export",
+          name: "admin-export",
+          component: AdminExport,
+        },
+      ],
     },
 
     {
@@ -31,12 +48,10 @@ const router = createRouter({
         requiresPlayer: true,
       },
     },
-
     {
       path: "/leaderboard",
       name: "leaderboard",
-      component: () =>
-        import ("../views/LeaderboardView.vue"),
+      component: () => import("../views/LeaderboardView.vue"),
     },
   ],
 });
