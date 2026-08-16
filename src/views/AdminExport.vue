@@ -2,10 +2,10 @@
 import { computed, inject, onMounted, ref } from "vue"
 
 import {
-    exportMarketingCsv,
-    getAdminEntries,
     type AdminEntry,
-} from "../services/Adminapi"
+    getAdminEntries,
+    exportMarketingCsv,
+} from "../services/adminApi"
 
 const handleAdminError =
     inject<(err: unknown) => boolean>("handleAdminError")

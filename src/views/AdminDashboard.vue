@@ -2,9 +2,9 @@
 import { computed, inject, onMounted, ref } from "vue"
 
 import {
-    getAdminAnalytics,
     type AnalyticsResponse,
-} from "../services/Adminapi"
+    getAdminAnalytics
+} from "../services/adminApi"
 
 const handleAdminError =
     inject<(err: unknown) => boolean>("handleAdminError")

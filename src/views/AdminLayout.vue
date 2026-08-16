@@ -3,10 +3,10 @@ import { onMounted, provide, ref } from "vue"
 
 import {
     AdminAuthError,
-    adminLogin,
-    adminLogout,
     checkAdminSession,
-} from "../services/Adminapi"
+    adminLogin,
+    adminLogout
+} from "../services/adminApi"
 
 // null = "still checking", so the login form doesn't flash
 // on screen for a moment while the session check is in flight.
