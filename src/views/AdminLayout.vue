@@ -144,7 +144,9 @@ onMounted(checkSession)
 
                     <button type="button" class="sidebar-toggle" :aria-expanded="sidebarOpen"
                         aria-label="Toggle navigation" @click="toggleSidebar">
-                        <span aria-hidden="true">☰</span>
+                        <span aria-hidden="true">
+                            <DashboardIconMenu/>
+                        </span>
                     </button>
                 </div>
 
