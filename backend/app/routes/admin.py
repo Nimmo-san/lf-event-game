@@ -174,7 +174,7 @@ def admin_login(
         value=raw_token,
         httponly=True,
         secure=IS_PRODUCTION,
-        samesite="lax",  # different frontend site, otherwise its "strict"
+        samesite="none",  # different frontend site, otherwise its "strict"
         max_age=60 * 60 * SESSION_DURATION_HOURS,
         path="/",
     )
