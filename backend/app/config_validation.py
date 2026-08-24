@@ -22,7 +22,8 @@ instead of failing loudly:
   production frontend fails as a CORS error.
 """
 
-from typing import Mapping
+# from typing import Mapping
+from collections.abc import Mapping
 
 REQUIRED_IN_PRODUCTION = ("ADMIN_EXPORT_KEY", "FRONTEND_URL")
 VALID_ENVIRONMENTS = {"production", "development"}
