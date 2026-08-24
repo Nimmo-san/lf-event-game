@@ -17,8 +17,8 @@ const router =
 const playerName =
     ref("")
 
-const companyName =
-    ref("")
+// const companyName =
+//     ref("")
 
 const email =
     ref("")
@@ -29,8 +29,8 @@ const error =
 const EMAIL_REGEX =
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const DOMAIN_REGEX =
-    /^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/.*)?$/i;
+// const DOMAIN_REGEX =
+//     /^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/.*)?$/i;
 
 function startGame() {
     error.value = "";
@@ -85,26 +85,26 @@ function startGame() {
     });
 }
 
-function validateCompanyName(
-    value: string,
-): string | null {
-    const company =
-        value.trim();
+// function validateCompanyName(
+//     value: string,
+// ): string | null {
+//     const company =
+//         value.trim();
 
-    if (!company) {
-        return "Enter your company name.";
-    }
+//     if (!company) {
+//         return "Enter your company name.";
+//     }
 
-    if (EMAIL_REGEX.test(company)) {
-        return "Enter your company name, not your email address.";
-    }
+//     if (EMAIL_REGEX.test(company)) {
+//         return "Enter your company name, not your email address.";
+//     }
 
-    if (DOMAIN_REGEX.test(company)) {
-        return "Enter your company name, not a website.";
-    }
+//     if (DOMAIN_REGEX.test(company)) {
+//         return "Enter your company name, not a website.";
+//     }
 
-    return null;
-}
+//     return null;
+// }
 </script>
 
 <template>
