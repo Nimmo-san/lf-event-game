@@ -1,8 +1,13 @@
+from fastapi import Depends
 from fastapi import FastAPI
+from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 import os
 from dotenv import load_dotenv
@@ -11,6 +16,7 @@ from app.models.admin import AdminSession
 
 from app.database import Base
 from app.database import engine
+from app.database import get_db
 from app.rate_limit import limiter
 
 from app.routes.players import router as player_router
@@ -75,7 +81,22 @@ app.include_router(
 
 
 @app.get("/health")
-def health():
+def health(db: Session = Depends(get_db)):
+    # A trivial query, not just "is the process up" — the previous
+    # version returned 200 unconditionally, so a Render disk issue
+    # (unmounted/full persistent disk under the SQLite file) would
+    # still show green while every real request 500s.
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "error",
+                "service": "lightning-flight-api",
+                "detail": "Database unreachable.",
+            },
+        )
 
     return {
         "status": "ok",
