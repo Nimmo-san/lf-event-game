@@ -10,6 +10,7 @@ from app.rate_limit import limiter
 from app.database import get_db
 from app.models.game import GameResult
 from app.schemas.player import GameResultResponse, GameResultCreate
+from app.scoring import MAX_DURATION_SECONDS, SCORE_TOLERANCE, max_plausible_score
 
 
 router = APIRouter(
@@ -53,8 +54,8 @@ def submit_game(
             detail="Invalid duration.",
         )
 
-    # if duration is higher
-    if payload.duration > 300:
+    # if duration is longer than a round can ever last
+    if payload.duration > MAX_DURATION_SECONDS:
         raise HTTPException(
             status_code=400,
             detail="Invalid duration.",
@@ -72,6 +73,18 @@ def submit_game(
         raise HTTPException(
             status_code=400,
             detail="Invalid lightning count.",
+        )
+
+    # score must be achievable for the reported duration/lightning —
+    # otherwise a submission could claim any score up to the flat caps
+    # above regardless of how little gameplay it represents.
+    if payload.score > max_plausible_score(
+        payload.duration,
+        payload.lightning_collected,
+    ) + SCORE_TOLERANCE:
+        raise HTTPException(
+            status_code=400,
+            detail="Score is not achievable for the reported duration and lightning collected.",
         )
 
     game = GameResult(
