@@ -54,6 +54,7 @@ npm install
 npm run dev       # starts Vite dev server (http://localhost:5173)
 npm run build     # type-checks (vue-tsc) and builds for production
 npm run preview   # serves the production build locally
+npm test          # runs the Vitest unit tests (src/**/*.test.ts)
 ```
 
 ### Backend

@@ -1,8 +1,14 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  test: {
+    // Only pure game-logic modules have tests so far — no DOM needed.
+    environment: "node",
+    include: ["src/**/*.test.ts"],
+  },
   plugins: [
     vue(),
 
