@@ -1,18 +1,10 @@
 import uuid
 
+from tests.factories import game_payload
+
 
 def _submit_game(client, **overrides):
-    payload = {
-        "game_id": str(uuid.uuid4()),
-        "player_id": str(uuid.uuid4()),
-        "player_name": "Jordan Lee",
-        "company_name": "Acme Corp",
-        "score": 4200,
-        "lightning_collected": 12,
-        "duration": 45.5,
-    }
-
-    payload.update(overrides)
+    payload = game_payload(**overrides)
 
     response = client.post("/api/games", json=payload)
     assert response.status_code == 200
@@ -86,8 +78,11 @@ def test_submit_leaderboard_entry_duplicate_returns_409(client):
 
 
 def test_get_leaderboard_ranks_best_score_per_player_first(client):
-    game_a = _submit_game(client, score=500)
-    game_b = _submit_game(client, score=9000)
+    # Distinct duration/lightning (not a raw score override) so each
+    # payload stays under the plausibility ceiling on its own terms —
+    # game_b's is simply a longer, more eventful round than game_a's.
+    game_a = _submit_game(client, duration=10, lightning_collected=0)
+    game_b = _submit_game(client, duration=45.5, lightning_collected=12)
 
     for game in (game_a, game_b):
         client.post(
