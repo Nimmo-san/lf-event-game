@@ -41,6 +41,14 @@ load_dotenv()
 
 validate_environment(os.environ)
 
+# Alembic (see backend/alembic/) is now the tool for schema changes
+# going forward — see backend/alembic/README for the one-time
+# production cutover step this still needs before create_all() below
+# can be removed. Left in place until then: on a brand new database
+# it's a no-op alongside Alembic (same schema either way), and on the
+# existing production database it's what already keeps the app
+# working today, so removing it here would break the next deploy
+# unless that cutover step has already happened.
 Base.metadata.create_all(
     bind=engine,
 )
