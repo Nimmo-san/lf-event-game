@@ -38,6 +38,10 @@ backend/
     routes/             API routes (players, leaderboard, admin)
     schemas/            Pydantic request/response schemas
     rate_limit.py        slowapi limiter config
+    scoring.py           mirrors Game.ts's scoring formula server-side
+    config_validation.py fail-fast checks for required prod env vars
+  alembic/             DB migrations (see alembic/README for status)
+  tests/
   requirements.txt
 ```
 
@@ -98,6 +102,17 @@ deployed as separate Render services, with the backend's SQLite database
 living on a Render persistent disk (its path is provided via
 `DATABASE_DIR`, not committed to the repo). Environment variables above
 are configured in the Render dashboard per service.
+
+### Database migrations
+
+Schema changes now ship as Alembic migrations (`backend/alembic/`)
+instead of hand-editing the production database. This is mid-rollout:
+`app.main` still runs `Base.metadata.create_all()` on startup, and a
+one-time production cutover step (`alembic stamp head` on the Render
+DB, then updating Render's start command to run `alembic upgrade
+head` before `uvicorn`) hasn't happened yet. See
+`backend/alembic/README` for the exact steps and current status
+before making a model change that needs a real migration.
 
 ## Contributing
 

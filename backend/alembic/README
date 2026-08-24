@@ -1,0 +1,54 @@
+Alembic migrations for the Lightning Flight backend.
+
+## Local dev / new environments
+
+Migrations aren't wired into anything yet — `app.main` still calls
+`Base.metadata.create_all()` on startup (see the comment above that
+call in `backend/app/main.py`), so a fresh local DB or a fresh Render
+deploy works exactly as it did before Alembic existed here.
+
+## Generating a new migration
+
+After changing a model in `backend/app/models/`:
+
+    cd backend
+    alembic revision --autogenerate -m "short description"
+
+Then read the generated file in `alembic/versions/` before committing
+it — autogenerate is a starting point, not something to trust blindly
+(it won't catch a column rename, for instance; that shows up as a
+drop + add unless you edit the migration to use `op.alter_column`).
+
+## One-time production cutover (not done yet)
+
+The existing Render database already has all three tables (created by
+`create_all()`, not by Alembic), so Alembic doesn't know about them
+yet. Before `Base.metadata.create_all()` can be removed from
+`app/main.py`, this needs to happen once, in this order:
+
+1. On the Render backend service (via its shell/console), run:
+
+       cd backend
+       alembic stamp head
+
+   This tells Alembic "the database is already at this revision" —
+   it does NOT run any migration or touch the schema, since the
+   baseline migration (`alembic/versions/*_baseline.py`) matches what
+   `create_all()` already built. Skipping this step and running
+   `alembic upgrade head` instead would fail: it would try to
+   `CREATE TABLE` on tables that already exist.
+
+2. Update Render's start command for the backend service to run
+   migrations before the app starts, e.g.:
+
+       cd backend && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+   (adjust to match whatever the current start command actually is —
+   this repo doesn't commit a Procfile, so the exact command lives in
+   the Render dashboard.)
+
+3. Only after both of the above are confirmed working on a real
+   deploy, remove the `Base.metadata.create_all()` call from
+   `app/main.py` in a small follow-up PR. From that point on, every
+   schema change ships as a new Alembic revision instead of a manual
+   edit to the production database.
