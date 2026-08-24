@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 import os
 from dotenv import load_dotenv
 
+from app.config_validation import validate_environment
 from app.models.admin import AdminSession
 
 from app.database import Base
@@ -27,6 +28,8 @@ from app.routes.admin import router as admin_router
 
 
 load_dotenv()
+
+validate_environment(os.environ)
 
 Base.metadata.create_all(
     bind=engine,
