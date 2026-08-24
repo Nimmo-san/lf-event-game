@@ -261,9 +261,9 @@ onBeforeUnmount(() => {
                             {{ player.player_name }}
                         </strong>
 
-                        <small>
+                        <!-- <small>
                             {{ player.company_name }}
-                        </small>
+                        </small> -->
                     </div>
 
 

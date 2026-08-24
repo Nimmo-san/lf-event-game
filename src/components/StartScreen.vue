@@ -20,6 +20,9 @@ const playerName =
 const companyName =
     ref("")
 
+const email =
+    ref("")
+
 const error =
     ref("")
 
@@ -30,32 +33,56 @@ const DOMAIN_REGEX =
     /^(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/.*)?$/i;
 
 function startGame() {
-    error.value = ""
+    error.value = "";
 
-    if (!playerName.value.trim()) {
+    const name =
+        playerName.value.trim();
+
+    const playerEmail =
+        email.value.trim();
+
+    // const companyError = validateCompanyName(companyName.value)
+
+    // if (companyError) {
+    //     error.value =
+    //         companyError;
+
+    //     return;
+    // }
+
+    if (!name) {
         error.value =
-            "Enter your name."
+            "Enter your name.";
 
-        return
+        return;
     }
 
-    const companyError = validateCompanyName(companyName.value)
-
-    if (companyError) {
+    if (!playerEmail) {
         error.value =
-            companyError;
+            "Enter your email address.";
+
+        return;
+    }
+
+    if (
+        !EMAIL_REGEX.test(
+            playerEmail,
+        )
+    ) {
+        error.value =
+            "Enter a valid email address.";
 
         return;
     }
 
     createPlayerSession(
-        playerName.value,
-        companyName.value,
-    )
+        name,
+        playerEmail,
+    );
 
     router.push({
         name: "game",
-    })
+    });
 }
 
 function validateCompanyName(
@@ -209,12 +236,22 @@ function validateCompanyName(
 
                 <div class="form-field">
 
-                    <label for="company-name">
+                    <!-- <label for="company-name">
                         Company
                     </label>
 
                     <input id="company-name" v-model="companyName" type="text" autocomplete="organization" minlength="2"
-                        maxlength="150" placeholder="e.g. Lightning Fibre" />
+                        maxlength="150" placeholder="e.g. Lightning Fibre" /> -->
+                    <div class="form-field">
+
+                        <label for="player-email">
+                            Email address
+                        </label>
+
+                        <input id="player-email" v-model="email" type="email" autocomplete="email" maxlength="255"
+                            required placeholder="e.g. Emma@lightningfibre.co.uk" />
+
+                    </div>
 
                 </div>
 

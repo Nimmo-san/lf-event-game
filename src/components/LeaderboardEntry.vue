@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { queueLeaderboardSubmission } from "../storage/leaderboardDatabase";
 import { syncLeaderboardSubmissions } from "../services/leaderboardSync";
 import { getPlayerRank } from "../services/leaderboardApi";
+import { getPlayerSession } from "../services/playerSession";
 
 const props = defineProps<{
     gameId: string;
@@ -16,7 +17,8 @@ const emit = defineEmits<{
     playAgain: [];
 }>();
 
-const email = ref("");
+const playerSession = getPlayerSession();
+const email = ref(playerSession?.email ?? "",);
 // const marketingConsent = ref(false);
 
 const loading = ref(false);
@@ -135,8 +137,9 @@ function playAgain() {
                 Email address
             </label>
 
-            <input id="leaderboard-email" v-model="email" type="email" autocomplete="email" inputmode="email"
-                placeholder="you@example.com" />
+            <!-- <input id="leaderboard-email" v-model="email" type="email" autocomplete="email" inputmode="email"
+                placeholder="you@example.com" /> -->
+            <input id="leaderboard-email" v-model="email" type="email" autocomplete="email" required />
 
             <label class="marketing-consent">
                 <!-- <input v-model="marketingConsent" type="checkbox" /> -->
