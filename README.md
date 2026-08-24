@@ -2,9 +2,9 @@
 
 An event/booth game built for Lightning Fibre. Players run through an
 obstacle course collecting "glowbolts," submit a score, and can opt in to
-a leaderboard with their name, company, and email. Built to work
-booth-side on flaky wifi: gameplay is played and stored offline-first,
-then synced to the backend once a connection is available.
+a leaderboard with their name and email. Built to work booth-side on
+flaky wifi: gameplay is played and stored offline-first, then synced to
+the backend once a connection is available.
 
 An admin dashboard (password-protected) shows live analytics — score
 distributions, play volume over time, top companies — and lets staff

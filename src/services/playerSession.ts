@@ -4,8 +4,6 @@ export interface PlayerSession {
   playerName: string;
   email: string;
 
-  companyName: string;
-
   createdAt: number;
 }
 
@@ -35,14 +33,6 @@ export function createPlayerSession(
     playerName: playerName.trim(),
 
     email: email.trim().toLowerCase(),
-
-    /*
-     * Kept temporarily because the existing
-     * backend GameResult requires company_name.
-     *
-     * Wont be rendered publicly.
-     */
-    companyName: "Not provided",
 
     createdAt: Date.now(),
   };

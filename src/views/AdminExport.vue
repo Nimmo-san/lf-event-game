@@ -19,7 +19,6 @@ const entries = ref<AdminEntry[]>([])
 const search = ref("")
 const name = ref("")
 const email = ref("")
-const company = ref("")
 
 const excludedIds = ref<Set<string>>(new Set())
 
@@ -27,8 +26,7 @@ const filtersActive = computed(() => {
     return Boolean(
         search.value.trim() ||
         name.value.trim() ||
-        email.value.trim() ||
-        company.value.trim(),
+        email.value.trim(),
     )
 })
 
@@ -67,7 +65,6 @@ function currentFilters() {
         search: search.value,
         name: name.value,
         email: email.value,
-        company: company.value,
     }
 }
 
@@ -128,7 +125,6 @@ function clearFilters() {
     search.value = ""
     name.value = ""
     email.value = ""
-    company.value = ""
 
     void loadEntries()
 }
@@ -172,7 +168,7 @@ onMounted(loadEntries)
             <div class="filter-grid">
                 <div class="filter-field filter-field--wide">
                     <label for="admin-search">Search all</label>
-                    <input id="admin-search" v-model="search" type="search" placeholder="Name, email or company"
+                    <input id="admin-search" v-model="search" type="search" placeholder="Name or email"
                         @keyup.enter="loadEntries" />
                 </div>
 
@@ -185,12 +181,6 @@ onMounted(loadEntries)
                 <div class="filter-field">
                     <label for="filter-email">Email</label>
                     <input id="filter-email" v-model="email" type="text" placeholder="e.g. @gmail.com"
-                        @keyup.enter="loadEntries" />
-                </div>
-
-                <div class="filter-field">
-                    <label for="filter-company">Company</label>
-                    <input id="filter-company" v-model="company" type="text" placeholder="e.g. Lightning"
                         @keyup.enter="loadEntries" />
                 </div>
             </div>
@@ -240,7 +230,6 @@ onMounted(loadEntries)
                         <tr>
                             <th scope="col" class="exclude-column">Export</th>
                             <th scope="col">Name</th>
-                            <th scope="col">Company</th>
                             <th scope="col">Email</th>
                             <th scope="col">Score</th>
                             <th scope="col">⚡</th>
@@ -261,8 +250,6 @@ onMounted(loadEntries)
                             <td>
                                 <strong>{{ entry.player_name }}</strong>
                             </td>
-
-                            <td>{{ entry.company_name }}</td>
 
                             <td>
                                 <a :href="`mailto:${entry.email}`">{{ entry.email }}</a>
@@ -364,7 +351,7 @@ onMounted(loadEntries)
 .filter-grid {
     display: grid;
 
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
 }
 

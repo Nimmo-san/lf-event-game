@@ -5,7 +5,6 @@ export interface GameResult {
 
   playerId: string;
   playerName: string;
-  companyName: string;
 
   score: number;
   lightning: number;

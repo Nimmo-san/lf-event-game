@@ -4,7 +4,6 @@ export interface LeaderboardRow {
   rank: number;
   player_id: string;
   player_name: string;
-  company_name: string;
   score: number;
   lightning_collected: number;
 }

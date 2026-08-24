@@ -128,7 +128,6 @@ def get_leaderboard(
         db.query(
             ranked_games.c.player_id,
             ranked_games.c.player_name,
-            ranked_games.c.company_name,
             ranked_games.c.score,
             ranked_games.c.lightning_collected,
         )
@@ -149,7 +148,6 @@ def get_leaderboard(
             "rank": rank,
             "player_id": player.player_id,
             "player_name": player.player_name,
-            "company_name": player.company_name,
             "score": player.score,
             "lightning_collected": player.lightning_collected,
         }
@@ -253,7 +251,6 @@ def build_best_submitted_games_query(
             LeaderboardEntry.player_id,
             GameResult.id.label("game_id"),
             GameResult.player_name,
-            GameResult.company_name,
             GameResult.score,
             GameResult.lightning_collected,
             GameResult.created_at,

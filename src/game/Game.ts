@@ -248,7 +248,6 @@ export class Game {
 
       playerId: session.playerId,
       playerName: session.playerName,
-      companyName: session.companyName,
 
       score: Math.round(this.score),
 

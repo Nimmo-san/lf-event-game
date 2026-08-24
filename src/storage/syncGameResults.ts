@@ -54,8 +54,6 @@ async function uploadGameResult(result: GameResult) {
 
       player_name: result.playerName,
 
-      company_name: result.companyName,
-
       score: result.score,
 
       lightning_collected: result.lightning,
