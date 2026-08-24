@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
@@ -12,6 +14,8 @@ from app.models.game import GameResult
 from app.schemas.player import GameResultResponse, GameResultCreate
 from app.scoring import MAX_DURATION_SECONDS, SCORE_TOLERANCE, max_plausible_score
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api",
@@ -56,6 +60,12 @@ def submit_game(
 
     # if duration is longer than a round can ever last
     if payload.duration > MAX_DURATION_SECONDS:
+        logger.warning(
+            "Rejected game submission: duration %.1fs exceeds max %ds (player_id=%s)",
+            payload.duration,
+            MAX_DURATION_SECONDS,
+            payload.player_id,
+        )
         raise HTTPException(
             status_code=400,
             detail="Invalid duration.",
@@ -63,6 +73,11 @@ def submit_game(
 
     # if score is higher than 100000, needs to change TODO
     if payload.score > 100_000:
+        logger.warning(
+            "Rejected game submission: score %d exceeds max 100000 (player_id=%s)",
+            payload.score,
+            payload.player_id,
+        )
         raise HTTPException(
             status_code=400,
             detail="Invalid score.",
@@ -70,6 +85,11 @@ def submit_game(
 
     # if lightning collected is higher than 1000, needs to change TODO
     if payload.lightning_collected > 1_000:
+        logger.warning(
+            "Rejected game submission: lightning_collected %d exceeds max 1000 (player_id=%s)",
+            payload.lightning_collected,
+            payload.player_id,
+        )
         raise HTTPException(
             status_code=400,
             detail="Invalid lightning count.",
@@ -78,10 +98,21 @@ def submit_game(
     # score must be achievable for the reported duration/lightning —
     # otherwise a submission could claim any score up to the flat caps
     # above regardless of how little gameplay it represents.
-    if payload.score > max_plausible_score(
+    max_score = max_plausible_score(
         payload.duration,
         payload.lightning_collected,
-    ) + SCORE_TOLERANCE:
+    )
+
+    if payload.score > max_score + SCORE_TOLERANCE:
+        logger.warning(
+            "Rejected game submission: score %d exceeds plausible max %.1f "
+            "for duration=%.1fs lightning=%d (player_id=%s)",
+            payload.score,
+            max_score,
+            payload.duration,
+            payload.lightning_collected,
+            payload.player_id,
+        )
         raise HTTPException(
             status_code=400,
             detail="Score is not achievable for the reported duration and lightning collected.",

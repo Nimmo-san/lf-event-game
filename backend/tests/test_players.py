@@ -1,3 +1,5 @@
+import logging
+
 from tests.factories import game_payload
 
 
@@ -108,6 +110,15 @@ def test_submit_game_rejects_score_implausible_for_duration_and_lightning(client
     response = client.post("/api/games", json=payload)
 
     assert response.status_code == 400
+
+
+def test_submit_game_rejects_implausible_score_logs_a_warning(client, caplog):
+    payload = game_payload(duration=10, lightning_collected=0, score=5_000)
+
+    with caplog.at_level(logging.WARNING, logger="app.routes.players"):
+        client.post("/api/games", json=payload)
+
+    assert "Rejected game submission" in caplog.text
 
 
 def test_submit_game_accepts_score_at_plausible_ceiling(client):
