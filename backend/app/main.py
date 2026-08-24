@@ -9,6 +9,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+import logging
 import os
 from dotenv import load_dotenv
 
@@ -26,6 +27,15 @@ from app.routes.leaderboard import (
 )
 from app.routes.admin import router as admin_router
 
+
+# Plain stdout logging — Render captures stdout as the service's log
+# stream, so no extra log shipping config is needed. Previously there
+# was no logging at all: a rejected submission or failed admin login
+# left no trace anywhere.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 load_dotenv()
 

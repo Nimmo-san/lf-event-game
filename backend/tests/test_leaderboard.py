@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from tests.factories import game_payload
@@ -75,6 +76,23 @@ def test_submit_leaderboard_entry_duplicate_returns_409(client):
     duplicate = client.post("/api/leaderboard/entries", json=entry_payload)
 
     assert duplicate.status_code == 409
+
+
+def test_submit_leaderboard_entry_duplicate_logs_a_warning(client, caplog):
+    game = _submit_game(client)
+
+    entry_payload = {
+        "game_id": game["game_id"],
+        "player_id": game["player_id"],
+        "email": "jordan@example.com",
+    }
+
+    client.post("/api/leaderboard/entries", json=entry_payload)
+
+    with caplog.at_level(logging.WARNING, logger="app.routes.leaderboard"):
+        client.post("/api/leaderboard/entries", json=entry_payload)
+
+    assert "already submitted" in caplog.text
 
 
 def test_get_leaderboard_ranks_best_score_per_player_first(client):

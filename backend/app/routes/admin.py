@@ -1,5 +1,6 @@
 import csv
 import io
+import logging
 import os
 import secrets
 import hashlib
@@ -30,6 +31,8 @@ from app.models.leaderboard import LeaderboardEntry
 from app.rate_limit import limiter
 from app.schemas.player import MarketingExportRequest
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/admin",
@@ -120,6 +123,10 @@ def hash_session_token(
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
 @router.get("/session")
 def admin_session(
     _: AdminSession = Depends(
@@ -142,6 +149,10 @@ def admin_login(
     if not admin_key_matches(
         payload.key,
     ):
+        logger.warning(
+            "Admin login failed: invalid key (ip=%s)",
+            _client_ip(request),
+        )
         raise HTTPException(
             status_code=401,
             detail="Invalid admin key.",
@@ -179,6 +190,11 @@ def admin_login(
         path="/",
     )
 
+    logger.info(
+        "Admin login succeeded (ip=%s)",
+        _client_ip(request),
+    )
+
     return {"authenticated": True, "expires_at": expires_at}
 
 
@@ -205,6 +221,11 @@ def admin_logout(
         if session:
             db.delete(session)
             db.commit()
+
+            logger.info(
+                "Admin logout (ip=%s)",
+                _client_ip(request),
+            )
 
     response.delete_cookie(
         key=ADMIN_COOKIE,

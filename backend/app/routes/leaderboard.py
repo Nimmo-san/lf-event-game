@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter
@@ -19,6 +20,8 @@ from app.schemas.player import (
     PlayerRankResponse,
 )
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api",
@@ -43,12 +46,24 @@ def submit_leaderboard_entry(
     )
 
     if not game:
+        logger.warning(
+            "Leaderboard entry rejected: game %s not found (player_id=%s)",
+            payload.game_id,
+            payload.player_id,
+        )
         raise HTTPException(
             status_code=404,
             detail="Game result not found.",
         )
 
     if game.player_id != payload.player_id:
+        logger.warning(
+            "Leaderboard entry rejected: player_id mismatch for game %s "
+            "(submitted=%s, actual=%s)",
+            payload.game_id,
+            payload.player_id,
+            game.player_id,
+        )
         raise HTTPException(
             status_code=403,
             detail="Game does not belong to player.",
@@ -61,6 +76,10 @@ def submit_leaderboard_entry(
     )
 
     if existing_entry:
+        logger.warning(
+            "Leaderboard entry rejected: game %s already submitted",
+            payload.game_id,
+        )
         raise HTTPException(
             status_code=409,
             detail="This game has already been submitted.",

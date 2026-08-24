@@ -3,12 +3,18 @@ import os
 import shutil
 import tempfile
 
-# Must happen before `app.database` is imported anywhere (it reads
-# DATABASE_DIR at import time), so the test suite never touches the
-# real dev database under backend/data/.
+# Must happen before `app.database`/`app.routes.admin` are imported
+# anywhere (they read these at import time), so the test suite never
+# touches the real dev database under backend/data/, and admin-route
+# tests have a known key to log in with — without this,
+# ADMIN_EXPORT_KEY is unset and admin login always 401s regardless of
+# what's submitted.
 _TEST_DB_DIR = tempfile.mkdtemp(prefix="lightning-flight-test-")
 os.environ["DATABASE_DIR"] = _TEST_DB_DIR
 atexit.register(shutil.rmtree, _TEST_DB_DIR, ignore_errors=True)
+
+TEST_ADMIN_EXPORT_KEY = "test-admin-export-key"
+os.environ.setdefault("ADMIN_EXPORT_KEY", TEST_ADMIN_EXPORT_KEY)
 
 import pytest
 from fastapi.testclient import TestClient
