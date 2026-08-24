@@ -4,7 +4,6 @@ export interface AdminEntry {
   id: string;
   email: string;
   player_name: string;
-  company_name: string;
   score: number;
   lightning_collected: number;
   entered_at: string;
@@ -51,21 +50,12 @@ export interface AnalyticsResponse {
       players: number;
     }>;
   };
-
-  companies: Array<{
-    company: string;
-    players: number;
-    games: number;
-    best_score: number;
-    average_score: number;
-  }>;
 }
 
 export interface EntryFilters {
   search?: string;
   name?: string;
   email?: string;
-  company?: string;
 }
 
 /*
@@ -111,10 +101,6 @@ function buildEntryParams(filters: EntryFilters) {
 
   if (filters.email?.trim()) {
     params.set("email", filters.email.trim());
-  }
-
-  if (filters.company?.trim()) {
-    params.set("company", filters.company.trim());
   }
 
   return params;
@@ -173,7 +159,6 @@ export async function exportMarketingCsv(
       search: filters.search?.trim() || null,
       name: filters.name?.trim() || null,
       email: filters.email?.trim() || null,
-      company: filters.company?.trim() || null,
       excluded_ids: excludedIds,
     }),
   });

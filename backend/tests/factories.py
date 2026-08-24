@@ -15,7 +15,6 @@ def game_payload(*, duration: float = 45.5, lightning_collected: int = 12, **ove
         "game_id": str(uuid.uuid4()),
         "player_id": str(uuid.uuid4()),
         "player_name": "Jordan Lee",
-        "company_name": "Acme Corp",
         "lightning_collected": lightning_collected,
         "duration": duration,
         "score": round(max_plausible_score(duration, lightning_collected)),

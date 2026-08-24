@@ -83,14 +83,6 @@ def test_submit_game_rejects_non_positive_duration_at_schema_level(client):
     assert response.status_code == 422
 
 
-def test_submit_game_rejects_company_name_that_looks_like_a_website(client):
-    payload = game_payload(company_name="acme.com")
-
-    response = client.post("/api/games", json=payload)
-
-    assert response.status_code == 422
-
-
 def test_submit_game_rejects_player_name_that_looks_like_an_email(client):
     payload = game_payload(player_name="jordan@example.com")
 

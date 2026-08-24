@@ -27,11 +27,6 @@ class GameResultCreate(BaseModel):
         max_length=100,
     )
 
-    company_name: str = Field(
-        min_length=2,
-        max_length=150,
-    )
-
     score: int = Field(
         ge=0,
     )
@@ -43,24 +38,6 @@ class GameResultCreate(BaseModel):
     duration: float = Field(
         gt=0,
     )
-
-    @field_validator(
-        "company_name",
-    )
-    @classmethod
-    def validate_company_name(
-        cls,
-        value: str,
-    ) -> str:
-        company = value.strip()
-
-        if EMAIL_PATTERN.match(company):
-            raise ValueError("Company name cannot be an email address.")
-
-        if DOMAIN_PATTERN.match(company):
-            raise ValueError("Company name cannot be a website.")
-
-        return company
 
     @field_validator("player_name")
     @classmethod
@@ -94,8 +71,6 @@ class GameResultResponse(BaseModel):
 
     player_name: str
 
-    company_name: str
-
     score: int
 
     lightning_collected: int
@@ -111,8 +86,6 @@ class LeaderboardRow(BaseModel):
     player_id: str
 
     player_name: str
-
-    company_name: str
 
     score: int
 
@@ -151,7 +124,6 @@ class MarketingExportRequest(BaseModel):
     search: str | None = None
     name: str | None = None
     email: str | None = None
-    company: str | None = None
 
     excluded_ids: list[str] = Field(
         default_factory=list,

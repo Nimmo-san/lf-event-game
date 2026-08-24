@@ -316,37 +316,6 @@ onBeforeUnmount(destroyCharts)
                     </table>
                 </article>
 
-                <!--
-                    Deliberately NOT a chart, which doesn't compress 
-                    into a single bar axis the way the other 3 panels do. 
-                    Kept as a list, height-matched to the chart panels
-                    via internal scroll instead.
-                -->
-                <article class="analytics-panel">
-                    <div class="panel-heading">
-                        <span>Companies</span>
-                        <h3>Top companies</h3>
-                    </div>
-
-                    <div v-if="analytics.companies.length === 0" class="panel-empty">
-                        No company data yet.
-                    </div>
-
-                    <div v-else class="company-list">
-                        <div v-for="company in analytics.companies" :key="company.company" class="company-row">
-                            <div>
-                                <strong>{{ company.company }}</strong>
-                                <span>{{ company.players }} players · {{ company.games }} games</span>
-                            </div>
-
-                            <div class="company-score">
-                                <strong>{{ company.best_score.toLocaleString() }}</strong>
-                                <span>best</span>
-                            </div>
-                        </div>
-                    </div>
-                </article>
-
                 <article class="analytics-panel">
                     <div class="panel-heading">
                         <span>Scores</span>
@@ -645,72 +614,6 @@ onBeforeUnmount(destroyCharts)
 
     flex: 1;
     min-height: 0;
-}
-
-.company-list {
-    flex: 1;
-    min-height: 0;
-
-    overflow-y: auto;
-}
-
-.company-row {
-    display: flex;
-
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 18px;
-
-    padding: 11px 0;
-
-    border-bottom: 1px solid var(--line);
-}
-
-.company-row:last-child {
-    border-bottom: 0;
-}
-
-.company-row>div:first-child {
-    display: grid;
-    gap: 4px;
-
-    min-width: 0;
-}
-
-.company-row strong {
-    overflow: hidden;
-
-    color: var(--text);
-
-    font-family: var(--font-display);
-    font-size: 0.78rem;
-
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.company-row span {
-    color: var(--text-faint);
-
-    font-family: var(--font-mono);
-    font-size: 0.57rem;
-}
-
-.company-score {
-    display: grid;
-
-    flex: 0 0 auto;
-
-    justify-items: end;
-    gap: 2px;
-}
-
-.company-score strong {
-    color: var(--volt);
-
-    font-family: var(--font-mono);
-    font-size: 0.82rem;
 }
 
 

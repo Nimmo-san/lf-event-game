@@ -253,10 +253,6 @@ def get_admin_entries(
         default=None,
         max_length=255,
     ),
-    company: str | None = Query(
-        default=None,
-        max_length=150,
-    ),
     db: Session = Depends(get_db),
     _: AdminSession = Depends(
         require_admin,
@@ -274,7 +270,6 @@ def get_admin_entries(
         LeaderboardEntry.email,
         LeaderboardEntry.created_at,
         GameResult.player_name,
-        GameResult.company_name,
         GameResult.score,
         GameResult.lightning_collected,
         func.row_number()
@@ -305,9 +300,6 @@ def get_admin_entries(
                 GameResult.player_name.ilike(
                     value,
                 ),
-                GameResult.company_name.ilike(
-                    value,
-                ),
                 LeaderboardEntry.email.ilike(
                     value,
                 ),
@@ -322,11 +314,6 @@ def get_admin_entries(
     if email:
         ranked_entries = ranked_entries.filter(
             LeaderboardEntry.email.ilike(f"%{email.strip()}%")
-        )
-
-    if company:
-        ranked_entries = ranked_entries.filter(
-            GameResult.company_name.ilike(f"%{company.strip()}%")
         )
 
     # Turn the ranked query into a subquery so we
@@ -352,7 +339,6 @@ def get_admin_entries(
             "id": row.id,
             "email": row.email,
             "player_name": row.player_name,
-            "company_name": row.company_name,
             "score": row.score,
             "lightning_collected": row.lightning_collected,
             "entered_at": row.created_at,
@@ -374,7 +360,6 @@ def export_marketing_data(
         LeaderboardEntry.email,
         LeaderboardEntry.created_at,
         GameResult.player_name,
-        GameResult.company_name,
         func.row_number()
         .over(
             partition_by=func.lower(LeaderboardEntry.email),
@@ -392,7 +377,6 @@ def export_marketing_data(
         ranked_entries = ranked_entries.filter(
             or_(
                 GameResult.player_name.ilike(value),
-                GameResult.company_name.ilike(value),
                 LeaderboardEntry.email.ilike(value),
             )
         )
@@ -405,11 +389,6 @@ def export_marketing_data(
     if payload.email:
         ranked_entries = ranked_entries.filter(
             LeaderboardEntry.email.ilike(f"%{payload.email.strip()}%")
-        )
-
-    if payload.company:
-        ranked_entries = ranked_entries.filter(
-            GameResult.company_name.ilike(f"%{payload.company.strip()}%")
         )
 
     if payload.excluded_ids:
@@ -436,7 +415,6 @@ def export_marketing_data(
         [
             "email",
             "player_name",
-            "company_name",
             "entered_at",
         ]
     )
@@ -446,7 +424,6 @@ def export_marketing_data(
             [
                 row.email,
                 row.player_name,
-                row.company_name,
                 row.created_at.isoformat(),
             ]
         )
@@ -509,20 +486,6 @@ def get_admin_analytics(
 
     leaderboard_conversion_rate = (
         unique_leaderboard_entries / unique_players * 100 if unique_players else 0
-    )
-
-    company_rows = (
-        db.query(
-            GameResult.company_name.label("company"),
-            func.count(func.distinct(GameResult.player_id)).label("players"),
-            func.count(GameResult.id).label("games"),
-            func.max(GameResult.score).label("best_score"),
-            func.avg(GameResult.score).label("average_score"),
-        )
-        .group_by(GameResult.company_name)
-        .order_by(func.count(func.distinct(GameResult.player_id)).desc())
-        .limit(10)
-        .all()
     )
 
     games_over_time_rows = (
@@ -657,17 +620,4 @@ def get_admin_analytics(
                 for row in games_per_player_rows
             ],
         },
-        "companies": [
-            {
-                "company": row.company,
-                "players": row.players,
-                "games": row.games,
-                "best_score": row.best_score,
-                "average_score": round(
-                    float(row.average_score or 0),
-                    2,
-                ),
-            }
-            for row in company_rows
-        ],
     }
