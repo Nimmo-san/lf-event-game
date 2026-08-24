@@ -104,6 +104,13 @@ living on a Render persistent disk (its path is provided via
 `DATABASE_DIR`, not committed to the repo). Environment variables above
 are configured in the Render dashboard per service.
 
+The backend runs as plain `uvicorn app.main:app` (no `--proxy-headers`
+flag), so `app/rate_limit.py` reads the real client IP straight from
+`X-Forwarded-For` itself rather than relying on uvicorn's own
+proxy-trust logic — this assumes Render's edge/load balancer is the
+only path to the service (true for a standard Render web service,
+which isn't otherwise directly reachable from the public internet).
+
 ### Database migrations
 
 Schema changes now ship as Alembic migrations (`backend/alembic/`)
