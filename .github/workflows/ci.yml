@@ -8,7 +8,7 @@ on:
 
 jobs:
   frontend:
-    name: Frontend (typecheck + build)
+    name: Frontend (typecheck + build + test)
     runs-on: ubuntu-latest
 
     steps:
@@ -23,6 +23,8 @@ jobs:
 
       # `vue-tsc -b` runs before `vite build`, so this is a real typecheck.
       - run: npm run build
+
+      - run: npm test
 
   backend:
     name: Backend (pytest)
